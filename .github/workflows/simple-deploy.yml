@@ -1,4 +1,4 @@
-name: Simple Deploy
+name: Vercel Deploy
 
 on:
   push:
@@ -20,11 +20,36 @@ jobs:
     - name: Install dependencies
       run: npm install
     
-    - name: Basic syntax check
+    - name: Test serverless entry point
+      run: node -c src/index-serverless.js
+    
+    - name: Test original entry point
       run: node -c src/index.js
     
-    - name: Check package.json
-      run: npm run build || echo "Build step completed"
+    - name: Validate vercel.json
+      run: |
+        if [ ! -f vercel.json ]; then
+          echo "❌ vercel.json not found"
+          exit 1
+        fi
+        echo "✅ vercel.json exists"
+        cat vercel.json
+        
+    - name: Validate serverless configuration
+      run: |
+        echo "🔍 Checking serverless entry point..."
+        if [ ! -f src/index-serverless.js ]; then
+          echo "❌ src/index-serverless.js not found"
+          exit 1
+        fi
+        echo "✅ Serverless entry point exists"
+        
+        echo "🔍 Checking vercel.json configuration..."
+        if ! grep -q "src/index-serverless.js" vercel.json; then
+          echo "❌ vercel.json doesn't reference src/index-serverless.js"
+          exit 1
+        fi
+        echo "✅ vercel.json properly configured for serverless"
 
   deploy-vercel:
     needs: test

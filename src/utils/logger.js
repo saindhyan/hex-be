@@ -36,8 +36,8 @@ const transports = [
   }),
 ];
 
-// Add file transports for production
-if (process.env.NODE_ENV === 'production') {
+// Skip file transports for serverless environments
+if (process.env.NODE_ENV === 'production' && !process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
   const logsDir = path.join(__dirname, '..', '..', 'logs');
   
   transports.push(

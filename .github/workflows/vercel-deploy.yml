@@ -1,0 +1,106 @@
+name: Vercel Serverless Deploy
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm install
+    
+    - name: Validate serverless entry point
+      run: node -c src/index-serverless.js
+    
+    - name: Validate Vercel configuration
+      run: |
+        echo "🔍 Validating Vercel serverless deployment..."
+        
+        # Check vercel.json exists and is valid
+        if [ ! -f vercel.json ]; then
+          echo "❌ vercel.json not found"
+          exit 1
+        fi
+        echo "✅ vercel.json exists"
+        
+        # Check serverless entry point exists
+        if [ ! -f src/index-serverless.js ]; then
+          echo "❌ src/index-serverless.js not found"
+          exit 1
+        fi
+        echo "✅ Serverless entry point exists"
+        
+        # Validate vercel.json references correct serverless file
+        if ! grep -q "src/index-serverless.js" vercel.json; then
+          echo "❌ vercel.json doesn't reference src/index-serverless.js"
+          exit 1
+        fi
+        echo "✅ vercel.json properly configured for serverless"
+        
+        # Show current configuration
+        echo "📋 Current vercel.json configuration:"
+        cat vercel.json
+        
+        echo ""
+        echo "🎯 Deployment target: Vercel Serverless Functions"
+        echo "📁 Entry point: src/index-serverless.js"
+        echo "🚫 File operations: Removed for serverless compatibility"
+
+  deploy:
+    needs: validate
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Vercel CLI
+      run: npm install --global vercel@latest
+    
+    - name: Deploy to Vercel
+      if: ${{ secrets.VERCEL_TOKEN }}
+      run: |
+        echo "🚀 Deploying HexSyn Server to Vercel..."
+        vercel --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
+      env:
+        VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    
+    - name: Deployment Success
+      if: ${{ secrets.VERCEL_TOKEN }}
+      run: |
+        echo "✅ HexSyn Server deployed successfully!"
+        echo ""
+        echo "🌐 Production URL: https://hexsyn-server.vercel.app"
+        echo "🔗 API Endpoints:"
+        echo "   • Health: https://hexsyn-server.vercel.app/api/health"
+        echo "   • Email: https://hexsyn-server.vercel.app/api/email/send-application"
+        echo "   • SMTP Test: https://hexsyn-server.vercel.app/api/email/test-connection"
+        echo ""
+        echo "🔍 Monitor: https://vercel.com/dashboard"
+    
+    - name: Setup Instructions
+      if: ${{ !secrets.VERCEL_TOKEN }}
+      run: |
+        echo "⚠️ Automatic deployment skipped - Vercel secrets not configured"
+        echo ""
+        echo "🔧 To enable GitHub Actions → Vercel deployment:"
+        echo "1. Get Vercel Token: https://vercel.com/account/tokens"
+        echo "2. Go to: GitHub repo → Settings → Secrets and variables → Actions"
+        echo "3. Add these secrets:"
+        echo "   • VERCEL_TOKEN"
+        echo "   • VERCEL_ORG_ID (from .vercel/project.json)"
+        echo "   • VERCEL_PROJECT_ID (from .vercel/project.json)"
+        echo ""
+        echo "🚀 Manual deployment: vercel --prod"
+        echo "📋 Current status: Validation passed, ready for deployment"

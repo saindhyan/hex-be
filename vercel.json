@@ -1,32 +1,19 @@
 {
   "version": 2,
-  "name": "hexsyn-server",
   "builds": [
     {
-      "src": "src/index.js",
+      "src": "src/index-serverless.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/src/index.js"
+      "dest": "/src/index-serverless.js"
     },
     {
       "src": "/(.*)",
-      "dest": "/src/index.js"
+      "dest": "/src/index-serverless.js"
     }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  },
-  "functions": {
-    "src/index.js": {
-      "maxDuration": 30
-    }
-  },
-  "regions": ["iad1"],
-  "github": {
-    "autoAlias": false
-  }
+  ]
 }

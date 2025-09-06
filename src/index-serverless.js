@@ -8,7 +8,6 @@ require('dotenv').config();
 const emailRoutes = require('./routes/email');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
 // Security middleware
 app.use(helmet());
@@ -49,7 +48,7 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Logging middleware - console only for serverless compatibility
+// Simple console logging for serverless
 app.use(morgan('combined'));
 
 // Routes
@@ -74,49 +73,5 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Export app for Vercel serverless functions
-if (process.env.VERCEL) {
-  module.exports = app;
-} else {
-  // Graceful shutdown handling
-  const server = app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  });
-}
-
-// Handle graceful shutdown (only for non-Vercel environments)
-if (!process.env.VERCEL) {
-  process.on('SIGTERM', () => {
-    console.log('SIGTERM received. Shutting down gracefully...');
-    if (typeof server !== 'undefined') {
-      server.close(() => {
-        console.log('Process terminated');
-        process.exit(0);
-      });
-    }
-  });
-
-  process.on('SIGINT', () => {
-    console.log('SIGINT received. Shutting down gracefully...');
-    if (typeof server !== 'undefined') {
-      server.close(() => {
-        console.log('Process terminated');
-        process.exit(0);
-      });
-    }
-  });
-
-  // Handle uncaught exceptions
-  process.on('uncaughtException', (err) => {
-    console.error('Uncaught Exception:', err);
-    process.exit(1);
-  });
-
-  process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-    process.exit(1);
-  });
-}
-
+// Export for serverless
 module.exports = app;
