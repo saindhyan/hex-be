@@ -13,14 +13,29 @@ class EmailService {
 
   async initializeTransporter() {
     if (!this.transporter) {
+      console.log('🔧 Initializing email transporter...');
+      console.log('📧 Email config check:', {
+        host: process.env.SMTP_HOST ? '✓ Set' : '✗ Missing',
+        port: process.env.SMTP_PORT ? '✓ Set' : '✗ Missing', 
+        user: process.env.SMTP_USER ? '✓ Set' : '✗ Missing',
+        pass: process.env.SMTP_PASS ? '✓ Set' : '✗ Missing',
+        from: process.env.FROM_EMAIL ? '✓ Set' : '✗ Missing'
+      });
+      
       this.transporter = createTransporter();
       
       // Verify connection
       try {
+        console.log('🔍 Verifying SMTP connection...');
         await this.transporter.verify();
-        console.log('SMTP connection verified successfully');
+        console.log('✅ SMTP connection verified successfully');
       } catch (error) {
-        console.error('SMTP connection failed:', error.message);
+        console.error('❌ SMTP connection failed:', {
+          message: error.message,
+          code: error.code,
+          command: error.command,
+          response: error.response
+        });
         throw new Error('Email service initialization failed');
       }
     }
@@ -135,10 +150,17 @@ class EmailService {
 
   async sendContactAdminNotification(contactData) {
     try {
+      console.log('📬 Sending contact admin notification...');
       await this.initializeTransporter();
       
       const template = contactNotificationTemplate(contactData);
       const adminEmail = process.env.ADMIN_EMAIL || 'admin@hexsyndatalabs.com';
+      
+      console.log('📋 Admin notification details:', {
+        adminEmail,
+        fromEmail: contactData.email,
+        subject: template.subject
+      });
       
       const mailOptions = {
         from: `${emailConfig.from.name} <${emailConfig.from.address}>`,
@@ -154,8 +176,13 @@ class EmailService {
         }
       };
 
+      console.log('📤 Sending admin notification email...');
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('Contact admin notification sent successfully:', result.messageId);
+      console.log('✅ Contact admin notification sent successfully:', {
+        messageId: result.messageId,
+        recipient: adminEmail,
+        response: result.response
+      });
       
       return {
         success: true,
@@ -163,16 +190,28 @@ class EmailService {
         recipient: adminEmail
       };
     } catch (error) {
-      console.error('Failed to send contact admin notification:', error);
+      console.error('❌ Failed to send contact admin notification:', {
+        message: error.message,
+        code: error.code,
+        command: error.command,
+        response: error.response,
+        stack: error.stack
+      });
       throw new Error(`Contact admin notification failed: ${error.message}`);
     }
   }
 
   async sendContactUserConfirmation(contactData) {
     try {
+      console.log('📧 Sending contact user confirmation...');
       await this.initializeTransporter();
       
       const template = contactConfirmationTemplate(contactData);
+      
+      console.log('📋 User confirmation details:', {
+        userEmail: contactData.email,
+        subject: template.subject
+      });
       
       const mailOptions = {
         from: `${emailConfig.from.name} <${emailConfig.from.address}>`,
@@ -188,8 +227,13 @@ class EmailService {
         }
       };
 
+      console.log('📤 Sending user confirmation email...');
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('Contact user confirmation sent successfully:', result.messageId);
+      console.log('✅ Contact user confirmation sent successfully:', {
+        messageId: result.messageId,
+        recipient: contactData.email,
+        response: result.response
+      });
       
       return {
         success: true,
@@ -197,7 +241,13 @@ class EmailService {
         recipient: contactData.email
       };
     } catch (error) {
-      console.error('Failed to send contact user confirmation:', error);
+      console.error('❌ Failed to send contact user confirmation:', {
+        message: error.message,
+        code: error.code,
+        command: error.command,
+        response: error.response,
+        stack: error.stack
+      });
       throw new Error(`Contact user confirmation failed: ${error.message}`);
     }
   }
@@ -261,17 +311,29 @@ class EmailService {
   }
 
   sendContactEmailsAsync(contactData) {
+    console.log('📨 Starting async contact email process for:', contactData.email);
+    
     // Return immediately, don't wait for emails
     setImmediate(async () => {
       try {
+        console.log('🚀 Executing contact email sending...');
         const results = await this.sendContactEmails(contactData);
-        console.log('Contact emails sent:', {
+        console.log('📧 Contact emails processing complete:', {
           adminSuccess: !!results.adminNotification,
           userSuccess: !!results.userConfirmation,
-          errors: results.errors.length
+          errors: results.errors.length,
+          errorDetails: results.errors
         });
+        
+        if (results.errors.length > 0) {
+          console.error('⚠️ Contact email errors occurred:', results.errors);
+        }
       } catch (error) {
-        console.error('Async contact email sending failed:', error);
+        console.error('💥 Async contact email sending failed:', {
+          message: error.message,
+          stack: error.stack,
+          contactEmail: contactData.email
+        });
       }
     });
     

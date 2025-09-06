@@ -23,10 +23,24 @@ router.post('/', contactRateLimit, validateContact, async (req, res) => {
       submittedAt: new Date().toISOString()
     };
 
-    console.log('Processing contact form from:', contactData.firstName, contactData.lastName, '-', contactData.subject);
+    console.log('📝 Processing contact form submission:', {
+      name: `${contactData.firstName} ${contactData.lastName}`,
+      email: contactData.email,
+      subject: contactData.subject,
+      inquiryType: contactData.inquiryType,
+      timestamp: contactData.submittedAt
+    });
+    
+    console.log('🔧 Environment check:', {
+      nodeEnv: process.env.NODE_ENV,
+      isVercel: !!process.env.VERCEL,
+      adminEmail: process.env.ADMIN_EMAIL ? '✓ Set' : '✗ Missing'
+    });
     
     // Send emails asynchronously and return immediately
+    console.log('🚀 Initiating async email sending...');
     const asyncResult = emailService.sendContactEmailsAsync(contactData);
+    console.log('✅ Async email process started:', asyncResult);
     
     res.status(200).json({
       message: 'Contact form submitted successfully! We will get back to you soon.',
@@ -42,7 +56,12 @@ router.post('/', contactRateLimit, validateContact, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Contact form processing failed:', error);
+    console.error('💥 Contact form processing failed:', {
+      message: error.message,
+      stack: error.stack,
+      contactEmail: req.validatedData?.email,
+      timestamp: new Date().toISOString()
+    });
     
     res.status(500).json({
       error: 'Internal server error',

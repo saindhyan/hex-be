@@ -2,6 +2,14 @@ const nodemailer = require('nodemailer');
 
 // SMTP configuration
 const createTransporter = () => {
+  console.log(' Creating SMTP transporter with config:', {
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: process.env.SMTP_PORT || 587,
+    user: process.env.SMTP_USER ? ' Set' : ' Missing',
+    pass: process.env.SMTP_PASS ? ' Set' : ' Missing',
+    fromEmail: process.env.FROM_EMAIL ? ' Set' : ' Missing'
+  });
+  
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: process.env.SMTP_PORT || 587,
