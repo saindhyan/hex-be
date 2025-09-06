@@ -15,11 +15,11 @@ class EmailService {
     if (!this.transporter) {
       console.log('🔧 Initializing email transporter...');
       console.log('📧 Email config check:', {
-        host: process.env.SMTP_HOST ? '✓ Set' : '✗ Missing',
-        port: process.env.SMTP_PORT ? '✓ Set' : '✗ Missing', 
-        user: process.env.SMTP_USER ? '✓ Set' : '✗ Missing',
-        pass: process.env.SMTP_PASS ? '✓ Set' : '✗ Missing',
-        from: process.env.FROM_EMAIL ? '✓ Set' : '✗ Missing'
+        host: process.env.SMTP_HOST ? process.env.SMTP_HOST : '✗ Missing',
+        port: process.env.SMTP_PORT ? process.env.SMTP_PORT : '✗ Missing', 
+        user: process.env.SMTP_USER ? process.env.SMTP_USER : '✗ Missing',
+        pass: process.env.SMTP_PASS ? process.env.SMTP_PASS : '✗ Missing',
+        from: process.env.FROM_EMAIL ? process.env.FROM_EMAIL : '✗ Missing'
       });
       
       this.transporter = createTransporter();
