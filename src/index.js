@@ -23,9 +23,7 @@ app.use(limiter);
 
 // CORS configuration
 const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'http://localhost:8080',
+  'https://hexsyn-datalabs.web.app',
   'http://10.189.19.73:8080',
   process.env.FRONTEND_URL
 ].filter(Boolean);
@@ -34,6 +32,11 @@ app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
+    
+    // Allow all localhost ports
+    if (origin && origin.match(/^http:\/\/localhost:\d+$/)) {
+      return callback(null, true);
+    }
     
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
