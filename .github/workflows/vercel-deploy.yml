@@ -71,23 +71,27 @@ jobs:
       if: ${{ secrets.VERCEL_TOKEN }}
       run: |
         echo "🚀 Deploying HexSyn Server to Vercel..."
-        vercel --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
+        DEPLOYMENT_URL=$(vercel --prod --token=${{ secrets.VERCEL_TOKEN }} --yes)
+        echo "DEPLOYMENT_URL=$DEPLOYMENT_URL" >> $GITHUB_ENV
+        echo "✅ Deployment completed successfully!"
+        echo "🌐 Live URL: $DEPLOYMENT_URL"
       env:
         VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
         VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     
-    - name: Deployment Success
+    - name: Display Deployment Info
       if: ${{ secrets.VERCEL_TOKEN }}
       run: |
-        echo "✅ HexSyn Server deployed successfully!"
-        echo ""
-        echo "🌐 Production URL: https://hexsyn-server.vercel.app"
+        echo "================================================"
+        echo "🎉 HEXSYN SERVER DEPLOYED SUCCESSFULLY!"
+        echo "================================================"
+        echo "🌐 Live URL: ${{ env.DEPLOYMENT_URL }}"
         echo "🔗 API Endpoints:"
-        echo "   • Health: https://hexsyn-server.vercel.app/api/health"
-        echo "   • Email: https://hexsyn-server.vercel.app/api/email/send-application"
-        echo "   • SMTP Test: https://hexsyn-server.vercel.app/api/email/test-connection"
-        echo ""
+        echo "   • Health: ${{ env.DEPLOYMENT_URL }}/api/health"
+        echo "   • Email: ${{ env.DEPLOYMENT_URL }}/api/email/send-application"
+        echo "   • SMTP Test: ${{ env.DEPLOYMENT_URL }}/api/email/test-connection"
         echo "🔍 Monitor: https://vercel.com/dashboard"
+        echo "================================================"
     
     - name: Setup Instructions
       if: ${{ !secrets.VERCEL_TOKEN }}
