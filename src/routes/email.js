@@ -36,7 +36,7 @@ router.post('/send-application', emailRateLimit, validateApplication, async (req
     // Prepare application data with timestamp
     const applicationData = {
       applicant,
-      internship,
+      opportunity,
       submittedAt: new Date().toISOString()
     };
 
