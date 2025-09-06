@@ -30,7 +30,7 @@ class EmailService {
       await this.initializeTransporter();
       
       const template = ownerNotificationTemplate(applicationData);
-      const adminEmail = process.env.ADMIN_EMAIL || 'piyushsaini597@gmail.com';
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@hexsyndatalabs.com';
       
       const mailOptions = {
         from: `${emailConfig.from.name} <${emailConfig.from.address}>`,
@@ -136,7 +136,7 @@ class EmailService {
       await this.initializeTransporter();
       
       const template = contactNotificationTemplate(contactData);
-      const adminEmail = process.env.ADMIN_EMAIL || 'piyushsaini597@gmail.com';
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@hexsyndatalabs.com';
       
       const mailOptions = {
         from: `${emailConfig.from.name} <${emailConfig.from.address}>`,
