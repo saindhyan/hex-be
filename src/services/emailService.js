@@ -18,7 +18,7 @@ class EmailService {
         host: process.env.SMTP_HOST ? process.env.SMTP_HOST : '✗ Missing',
         port: process.env.SMTP_PORT ? process.env.SMTP_PORT : '✗ Missing', 
         user: process.env.SMTP_USER ? process.env.SMTP_USER : '✗ Missing',
-        pass: process.env.SMTP_PASS ? process.env.SMTP_PASS : '✗ Missing',
+        pass: process.env.SMTP_PASS ? "set" : '✗ Missing',
         from: process.env.FROM_EMAIL ? process.env.FROM_EMAIL : '✗ Missing'
       });
       
