@@ -1,4 +1,4 @@
-name: Deploy to Production
+name: Deploy to Production (Disabled - Use test-only.yml)
 
 on:
   push:
