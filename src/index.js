@@ -7,6 +7,7 @@ require('dotenv').config();
 
 const applicationRoutes = require('./routes/application');
 const contactRoutes = require('./routes/contact');
+const subscriptionRoutes = require('./routes/subscription');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -59,6 +60,7 @@ app.use(morgan('combined'));
 // Routes
 app.use('/api/application', applicationRoutes);
 app.use('/api/contact-us', contactRoutes);
+app.use('/api/subscription', subscriptionRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

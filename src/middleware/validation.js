@@ -38,6 +38,17 @@ const contactSchema = Joi.object({
   inquiryType: Joi.string().valid('general', 'internship', 'partnership', 'support', 'careers', 'media').required()
 });
 
+// Validation schema for subscription submission
+const subscriptionSchema = Joi.object({
+  email: Joi.string().email().required(),
+  subscriptionType: Joi.string().valid('platform_updates', 'newsletter', 'opportunities', 'announcements').required(),
+  source: Joi.string().trim().min(1).max(100).required(),
+  timestamp: Joi.string().isoDate().optional(),
+  interests: Joi.array().items(
+    Joi.string().valid('platform_launch', 'new_features', 'opportunities', 'partnerships', 'events', 'updates')
+  ).min(1).required()
+});
+
 const validateApplication = (req, res, next) => {
   const { error, value } = applicationSchema.validate(req.body, {
     abortEarly: false,
@@ -82,7 +93,30 @@ const validateContact = (req, res, next) => {
   next();
 };
 
+const validateSubscription = (req, res, next) => {
+  const { error, value } = subscriptionSchema.validate(req.body, {
+    abortEarly: false,
+    stripUnknown: true
+  });
+
+  if (error) {
+    const validationErrors = error.details.map(detail => ({
+      field: detail.path.join('.'),
+      message: detail.message
+    }));
+
+    return res.status(400).json({
+      error: 'Validation failed',
+      details: validationErrors
+    });
+  }
+
+  req.validatedData = value;
+  next();
+};
+
 module.exports = {
   validateApplication,
-  validateContact
+  validateContact,
+  validateSubscription
 };

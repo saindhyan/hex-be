@@ -3,6 +3,8 @@ const ownerNotificationTemplate = require('../templates/ownerNotification');
 const applicantConfirmationTemplate = require('../templates/applicantConfirmation');
 const contactNotificationTemplate = require('../templates/contactNotification');
 const contactConfirmationTemplate = require('../templates/contactConfirmation');
+const subscriptionNotificationTemplate = require('../templates/subscriptionNotification');
+const subscriptionConfirmationTemplate = require('../templates/subscriptionConfirmation');
 
 class EmailService {
   constructor() {
@@ -270,6 +272,132 @@ class EmailService {
         });
       } catch (error) {
         console.error('Async contact email sending failed:', error);
+      }
+    });
+    
+    return {
+      message: 'Emails are being sent in the background',
+      status: 'processing'
+    };
+  }
+
+  async sendSubscriptionAdminNotification(subscriptionData) {
+    try {
+      await this.initializeTransporter();
+      
+      const template = subscriptionNotificationTemplate(subscriptionData);
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@hexsyndatalabs.com';
+      
+      const mailOptions = {
+        from: `${emailConfig.from.name} <${emailConfig.from.address}>`,
+        to: adminEmail,
+        replyTo: subscriptionData.email,
+        subject: template.subject,
+        html: template.html,
+        text: template.text,
+        priority: 'normal',
+        headers: {
+          'X-Subscription-Type': 'subscription-notification',
+          'X-Subscription-ID': `sub_${Date.now()}`
+        }
+      };
+
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log('Subscription admin notification sent successfully:', result.messageId);
+      
+      return {
+        success: true,
+        messageId: result.messageId,
+        recipient: adminEmail
+      };
+    } catch (error) {
+      console.error('Failed to send subscription admin notification:', error);
+      throw new Error(`Subscription admin notification failed: ${error.message}`);
+    }
+  }
+
+  async sendSubscriptionUserConfirmation(subscriptionData) {
+    try {
+      await this.initializeTransporter();
+      
+      const template = subscriptionConfirmationTemplate(subscriptionData);
+      
+      const mailOptions = {
+        from: `${emailConfig.from.name} <${emailConfig.from.address}>`,
+        to: subscriptionData.email,
+        replyTo: emailConfig.replyTo,
+        subject: template.subject,
+        html: template.html,
+        text: template.text,
+        priority: 'normal',
+        headers: {
+          'X-Subscription-Type': 'subscription-confirmation',
+          'X-Subscription-ID': `sub_${Date.now()}`
+        }
+      };
+
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log('Subscription user confirmation sent successfully:', result.messageId);
+      
+      return {
+        success: true,
+        messageId: result.messageId,
+        recipient: subscriptionData.email
+      };
+    } catch (error) {
+      console.error('Failed to send subscription user confirmation:', error);
+      throw new Error(`Subscription user confirmation failed: ${error.message}`);
+    }
+  }
+
+  async sendSubscriptionEmails(subscriptionData) {
+    const results = {
+      adminNotification: null,
+      userConfirmation: null,
+      errors: []
+    };
+
+    // Send both emails in parallel
+    const [adminResult, userResult] = await Promise.allSettled([
+      this.sendSubscriptionAdminNotification(subscriptionData),
+      this.sendSubscriptionUserConfirmation(subscriptionData)
+    ]);
+
+    // Process admin notification result
+    if (adminResult.status === 'fulfilled') {
+      results.adminNotification = adminResult.value;
+    } else {
+      results.errors.push({
+        type: 'admin_notification',
+        message: adminResult.reason.message
+      });
+    }
+
+    // Process user confirmation result
+    if (userResult.status === 'fulfilled') {
+      results.userConfirmation = userResult.value;
+    } else {
+      results.errors.push({
+        type: 'user_confirmation',
+        message: userResult.reason.message
+      });
+    }
+
+    return results;
+  }
+
+  sendSubscriptionEmailsAsync(subscriptionData) {
+    // Return immediately, don't wait for emails
+    setImmediate(async () => {
+      try {
+        const results = await this.sendSubscriptionEmails(subscriptionData);
+        console.log('Subscription emails sent:', {
+          adminSuccess: !!results.adminNotification,
+          userSuccess: !!results.userConfirmation,
+          errors: results.errors.length
+        });
+      } catch (error) {
+        console.error('Async subscription email sending failed:', error);
       }
     });
     
