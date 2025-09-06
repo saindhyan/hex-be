@@ -1,6 +1,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const emailService = require('../services/emailService');
+const googleSheetsService = require('../services/googleSheetsService');
 const { validateApplication } = require('../middleware/validation');
 
 const router = express.Router();
@@ -29,6 +30,11 @@ router.post('/', applicationRateLimit, validateApplication, async (req, res) => 
 
     console.log('Processing application from:', applicationData.applicant.firstName, applicationData.applicant.lastName);
     
+    // Log to Google Sheets (async, non-blocking)
+    googleSheetsService.logApplication({ applicant, opportunity, ownerEmail }).catch(error => {
+      console.error('Google Sheets logging failed:', error);
+    });
+
     // Send emails synchronously for debugging
     console.log('🚀 Sending application emails synchronously for debugging...');
     const emailResults = await emailService.sendBothEmails(applicationData, ownerEmail);

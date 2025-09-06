@@ -1,6 +1,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const emailService = require('../services/emailService');
+const googleSheetsService = require('../services/googleSheetsService');
 const { validateSubscription } = require('../middleware/validation');
 
 const router = express.Router();
@@ -24,6 +25,11 @@ router.post('/subscribe', subscriptionRateLimit, validateSubscription, async (re
     };
 
     console.log('Processing subscription from:', subscriptionData.email, '-', subscriptionData.subscriptionType);
+    
+    // Log to Google Sheets (async, non-blocking)
+    googleSheetsService.logSubscription(subscriptionData).catch(error => {
+      console.error('Google Sheets logging failed:', error);
+    });
     
     // Send emails synchronously for debugging
     console.log('🚀 Sending subscription emails synchronously for debugging...');

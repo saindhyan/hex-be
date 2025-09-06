@@ -1,6 +1,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const emailService = require('../services/emailService');
+const googleSheetsService = require('../services/googleSheetsService');
 const { validateContact } = require('../middleware/validation');
 
 const router = express.Router();
@@ -35,6 +36,11 @@ router.post('/', contactRateLimit, validateContact, async (req, res) => {
       nodeEnv: process.env.NODE_ENV,
       isVercel: !!process.env.VERCEL,
       adminEmail: process.env.ADMIN_EMAIL ? '✓ Set' : '✗ Missing'
+    });
+    
+    // Log to Google Sheets (async, non-blocking)
+    googleSheetsService.logContact(contactData).catch(error => {
+      console.error('Google Sheets logging failed:', error);
     });
     
     // Send emails synchronously for debugging
