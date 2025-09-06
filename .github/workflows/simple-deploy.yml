@@ -33,10 +33,27 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Deploy to Vercel
-      uses: amondnet/vercel-action@v25
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
       with:
-        vercel-token: ${{ secrets.VERCEL_TOKEN }}
-        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-        vercel-args: '--prod'
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install Vercel CLI
+      run: npm install --global vercel@latest
+    
+    - name: Deploy to Vercel
+      if: ${{ secrets.VERCEL_TOKEN }}
+      run: vercel --prod --token=${{ secrets.VERCEL_TOKEN }}
+      env:
+        VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    
+    - name: Skip Vercel deployment (no token)
+      if: ${{ !secrets.VERCEL_TOKEN }}
+      run: |
+        echo "⚠️ VERCEL_TOKEN not found in secrets"
+        echo "📝 To enable Vercel deployment:"
+        echo "1. Go to GitHub repo → Settings → Secrets and variables → Actions"
+        echo "2. Add VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID"
+        echo "3. Or use manual deployment: vercel --prod"
