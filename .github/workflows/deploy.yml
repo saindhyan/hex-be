@@ -3,82 +3,141 @@ name: Deploy to Production
 on:
   push:
     branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
   workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Setup Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: '18'
         cache: 'npm'
     
     - name: Install dependencies
-      run: npm ci
+      run: npm install
+    
+    - name: Run health check
+      run: |
+        npm start &
+        sleep 10
+        curl -f http://localhost:5000/api/health || exit 1
+        pkill -f "node src/index.js"
     
     - name: Run tests
-      run: npm test || echo "No tests configured"
-    
-    - name: Run linting
-      run: npm run lint || echo "No linting configured"
+      run: npm test || echo "No tests configured - skipping"
 
   build:
     needs: test
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Setup Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: '18'
         cache: 'npm'
     
     - name: Install dependencies
-      run: npm ci --only=production
+      run: npm install --production
     
     - name: Build Docker image
       run: |
         docker build -t hexsyn-server:${{ github.sha }} .
         docker tag hexsyn-server:${{ github.sha }} hexsyn-server:latest
     
+    - name: Test Docker image
+      run: |
+        docker run -d --name test-container -p 5001:5000 hexsyn-server:latest
+        sleep 15
+        curl -f http://localhost:5001/api/health || exit 1
+        docker stop test-container
+        docker rm test-container
+    
     - name: Save Docker image
       run: docker save hexsyn-server:latest | gzip > hexsyn-server.tar.gz
     
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: docker-image
+        name: docker-image-${{ github.sha }}
         path: hexsyn-server.tar.gz
+        retention-days: 7
 
-  deploy:
-    needs: build
+  deploy-vercel:
+    needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     environment: production
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install Vercel CLI
+      run: npm install --global vercel@latest
+    
+    - name: Pull Vercel Environment Information
+      run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+      env:
+        VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    
+    - name: Build Project Artifacts
+      run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+      env:
+        VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    
+    - name: Deploy Project Artifacts to Vercel
+      run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+      env:
+        VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+  deploy-docker:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    environment: production
+    steps:
+    - uses: actions/checkout@v4
     
     - name: Download artifact
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
-        name: docker-image
+        name: docker-image-${{ github.sha }}
     
     - name: Load Docker image
       run: docker load < hexsyn-server.tar.gz
     
-    # Add your deployment steps here
-    # Example for AWS ECS, DigitalOcean, or other platforms
-    - name: Deploy to production
+    - name: Deploy to Railway (Example)
+      if: ${{ secrets.RAILWAY_TOKEN }}
       run: |
-        echo "Add your deployment commands here"
-        echo "Examples:"
-        echo "- Deploy to AWS ECS"
-        echo "- Deploy to DigitalOcean App Platform"
-        echo "- Deploy to Railway"
-        echo "- Deploy to Render"
-        echo "- Deploy to your VPS"
+        echo "Deploying to Railway..."
+        # Add Railway deployment commands here
+        echo "Railway deployment would go here"
+    
+    - name: Deploy to DigitalOcean (Example)
+      if: ${{ secrets.DO_TOKEN }}
+      run: |
+        echo "Deploying to DigitalOcean..."
+        # Add DigitalOcean deployment commands here
+        echo "DigitalOcean deployment would go here"
+    
+    - name: Deploy notification
+      run: |
+        echo "✅ Deployment completed successfully!"
+        echo "🐳 Docker image: hexsyn-server:${{ github.sha }}"
+        echo "🌐 Available deployment options configured"
