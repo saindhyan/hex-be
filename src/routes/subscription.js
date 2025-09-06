@@ -25,13 +25,32 @@ router.post('/subscribe', subscriptionRateLimit, validateSubscription, async (re
 
     console.log('Processing subscription from:', subscriptionData.email, '-', subscriptionData.subscriptionType);
     
-    // Send emails asynchronously and return immediately
-    const asyncResult = emailService.sendSubscriptionEmailsAsync(subscriptionData);
+    // Send emails synchronously for debugging
+    console.log('🚀 Sending subscription emails synchronously for debugging...');
+    const emailResults = await emailService.sendSubscriptionEmails(subscriptionData);
+    console.log('📧 Subscription email sending results:', emailResults);
     
-    res.status(200).json({
-      message: 'Successfully subscribed to updates! Check your email for confirmation.',
-      success: true,
-      status: asyncResult.status,
+    const hasErrors = emailResults.errors.length > 0;
+    const allSuccess = emailResults.adminNotification && emailResults.userConfirmation;
+    
+    res.status(hasErrors && !allSuccess ? 500 : 200).json({
+      message: allSuccess ? 'Successfully subscribed and confirmation emails sent!' : 
+               hasErrors ? 'Subscription processed but some emails failed' : 
+               'Successfully subscribed to updates!',
+      success: !hasErrors || allSuccess,
+      emailStatus: {
+        adminNotification: {
+          success: !!emailResults.adminNotification,
+          messageId: emailResults.adminNotification?.messageId,
+          recipient: emailResults.adminNotification?.recipient
+        },
+        userConfirmation: {
+          success: !!emailResults.userConfirmation,
+          messageId: emailResults.userConfirmation?.messageId,
+          recipient: emailResults.userConfirmation?.recipient
+        },
+        errors: emailResults.errors
+      },
       details: {
         email: subscriptionData.email,
         subscriptionType: subscriptionData.subscriptionType,
