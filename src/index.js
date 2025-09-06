@@ -94,6 +94,9 @@ const server = app.listen(PORT, () => {
 // Export app for Vercel serverless functions
 if (process.env.VERCEL) {
   module.exports = app;
+} else if (!server) {
+  // For testing environments where server might not start
+  module.exports = app;
 }
 
 // Handle graceful shutdown
