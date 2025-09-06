@@ -17,7 +17,7 @@ const applicationSchema = Joi.object({
     availability: Joi.string().trim().allow('').optional()
   }).required(),
   
-  internship: Joi.object({
+  opportunity: Joi.object({
     id: Joi.number().integer().positive().required(),
     title: Joi.string().trim().min(1).max(100).required(),
     company: Joi.string().trim().min(1).max(100).required()

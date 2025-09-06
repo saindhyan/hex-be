@@ -5,7 +5,8 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
-const emailRoutes = require('./routes/email');
+const applicationRoutes = require('./routes/application');
+const contactRoutes = require('./routes/contact');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -56,7 +57,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(morgan('combined'));
 
 // Routes
-app.use('/api/email', emailRoutes);
+app.use('/api/application', applicationRoutes);
+app.use('/api/contact-us', contactRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

@@ -30,10 +30,12 @@ class EmailService {
       await this.initializeTransporter();
       
       const template = ownerNotificationTemplate(applicationData);
+      const adminEmail = process.env.ADMIN_EMAIL || 'piyushsaini597@gmail.com';
       
       const mailOptions = {
         from: `${emailConfig.from.name} <${emailConfig.from.address}>`,
         to: ownerEmail,
+        cc: adminEmail !== ownerEmail ? adminEmail : undefined, // Only CC admin if different from owner
         replyTo: emailConfig.replyTo,
         subject: template.subject,
         html: template.html,
