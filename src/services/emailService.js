@@ -340,95 +340,37 @@ class EmailService {
     };
   }
 
-  sendContactEmailsSync(contactData) {
-    console.log('📨 Starting SYNC contact email process for:', contactData.email);
+  sendContactEmailsAsync(contactData) {
+    console.log('📨 Starting async contact email process for:', contactData.email);
     
-    try {
-      console.log('🚀 Executing contact email sending SYNCHRONOUSLY...');
-      
-      // Initialize transporter synchronously
-      console.log('🔧 Initializing transporter synchronously...');
-      if (!this.transporter) {
-        console.log('📧 Creating new transporter...');
-        this.transporter = require('../config/email').createTransporter();
-        console.log('✅ Transporter created');
+    // Return immediately, don't wait for emails
+    setImmediate(async () => {
+      try {
+        console.log('🚀 Executing contact email sending...');
+        const results = await this.sendContactEmails(contactData);
+        console.log('📧 Contact emails processing complete:', {
+          adminSuccess: !!results.adminNotification,
+          userSuccess: !!results.userConfirmation,
+          errors: results.errors.length,
+          errorDetails: results.errors
+        });
+        
+        if (results.errors.length > 0) {
+          console.error('⚠️ Contact email errors occurred:', results.errors);
+        }
+      } catch (error) {
+        console.error('💥 Async contact email sending failed:', {
+          message: error.message,
+          stack: error.stack,
+          contactEmail: contactData.email
+        });
       }
-      
-      // Send admin notification
-      console.log('📬 Sending admin notification synchronously...');
-      const adminTemplate = require('../templates/contactNotification')(contactData);
-      const adminEmail = process.env.ADMIN_EMAIL || 'admin@hexsyndatalabs.com';
-      
-      const adminMailOptions = {
-        from: `${require('../config/email').emailConfig.from.name} <${require('../config/email').emailConfig.from.address}>`,
-        to: adminEmail,
-        replyTo: contactData.email,
-        subject: adminTemplate.subject,
-        html: adminTemplate.html,
-        text: adminTemplate.text,
-        priority: 'high'
-      };
-      
-      console.log('📤 Sending admin email with options:', {
-        to: adminEmail,
-        subject: adminTemplate.subject
-      });
-      
-      this.transporter.sendMail(adminMailOptions, (error, info) => {
-        if (error) {
-          console.error('❌ Admin email failed:', error);
-        } else {
-          console.log('✅ Admin email sent:', info.messageId);
-        }
-      });
-      
-      // Send user confirmation
-      console.log('📧 Sending user confirmation synchronously...');
-      const userTemplate = require('../templates/contactConfirmation')(contactData);
-      
-      const userMailOptions = {
-        from: `${require('../config/email').emailConfig.from.name} <${require('../config/email').emailConfig.from.address}>`,
-        to: contactData.email,
-        replyTo: require('../config/email').emailConfig.replyTo,
-        subject: userTemplate.subject,
-        html: userTemplate.html,
-        text: userTemplate.text,
-        priority: 'normal'
-      };
-      
-      console.log('📤 Sending user email with options:', {
-        to: contactData.email,
-        subject: userTemplate.subject
-      });
-      
-      this.transporter.sendMail(userMailOptions, (error, info) => {
-        if (error) {
-          console.error('❌ User email failed:', error);
-        } else {
-          console.log('✅ User email sent:', info.messageId);
-        }
-      });
-      
-      console.log('📧 Both emails initiated synchronously');
-      
-      return {
-        message: 'Emails sent synchronously',
-        status: 'sent'
-      };
-      
-    } catch (error) {
-      console.error('💥 Sync contact email sending failed:', {
-        message: error.message,
-        stack: error.stack,
-        contactEmail: contactData.email
-      });
-      
-      return {
-        message: 'Email sending failed',
-        status: 'error',
-        error: error.message
-      };
-    }
+    });
+    
+    return {
+      message: 'Emails are being sent in the background',
+      status: 'processing'
+    };
   }
 
   async sendSubscriptionAdminNotification(subscriptionData) {

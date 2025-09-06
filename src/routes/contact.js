@@ -38,14 +38,31 @@ router.post('/', contactRateLimit, validateContact, async (req, res) => {
     });
     
     // Send emails synchronously for debugging
-    console.log('🚀 Initiating SYNC email sending...');
-    const syncResult = emailService.sendContactEmailsSync(contactData);
-    console.log('✅ Sync email process completed:', syncResult);
+    console.log('🚀 Sending emails synchronously for debugging...');
+    const emailResults = await emailService.sendContactEmails(contactData);
+    console.log('📧 Email sending results:', emailResults);
     
-    res.status(200).json({
-      message: 'Contact form submitted successfully! We will get back to you soon.',
-      success: true,
-      status: syncResult.status,
+    const hasErrors = emailResults.errors.length > 0;
+    const allSuccess = emailResults.adminNotification && emailResults.userConfirmation;
+    
+    res.status(hasErrors && !allSuccess ? 500 : 200).json({
+      message: allSuccess ? 'Contact form submitted and emails sent successfully!' : 
+               hasErrors ? 'Contact form submitted but some emails failed' : 
+               'Contact form submitted successfully!',
+      success: !hasErrors || allSuccess,
+      emailStatus: {
+        adminNotification: {
+          success: !!emailResults.adminNotification,
+          messageId: emailResults.adminNotification?.messageId,
+          recipient: emailResults.adminNotification?.recipient
+        },
+        userConfirmation: {
+          success: !!emailResults.userConfirmation,
+          messageId: emailResults.userConfirmation?.messageId,
+          recipient: emailResults.userConfirmation?.recipient
+        },
+        errors: emailResults.errors
+      },
       details: {
         name: `${contactData.firstName} ${contactData.lastName}`,
         email: contactData.email,
