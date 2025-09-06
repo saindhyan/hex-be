@@ -1,8 +1,7 @@
-name: Vercel Deploy
+name: Vercel Deploy (DISABLED)
 
 on:
-  push:
-    branches: [ main, master ]
+  # Disabled - using vercel.yml instead
   workflow_dispatch:
 
 jobs:

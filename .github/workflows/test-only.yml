@@ -1,11 +1,7 @@
-name: CI Pipeline
+name: CI Pipeline (DISABLED)
 
 on:
-  # Disabled - using simple-deploy.yml instead
-  # push:
-  #   branches: [ main, master ]
-  # pull_request:
-  #   branches: [ main, master ]
+  # Disabled - using vercel.yml instead
   workflow_dispatch:
 
 jobs:
