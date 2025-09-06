@@ -2,11 +2,11 @@
 const ownerNotificationTemplate = (applicationData) => {
   const {
     applicant,
-    internship,
+    opportunity,
     submittedAt
   } = applicationData;
 
-  const subject = `New Application Received: ${internship.title} - ${applicant.firstName} ${applicant.lastName}`;
+  const subject = `New Application Received: ${opportunity.title} - ${applicant.firstName} ${applicant.lastName}`;
 
   const html = `
     <!DOCTYPE html>
@@ -137,11 +137,11 @@ const ownerNotificationTemplate = (applicationData) => {
             <div class="info-grid">
                 <div class="info-item">
                     <div class="info-label">Position</div>
-                    <div class="info-value">${internship.title}</div>
+                    <div class="info-value">${opportunity.title}</div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">Company</div>
-                    <div class="info-value">${internship.company}</div>
+                    <div class="info-value">${opportunity.company}</div>
                 </div>
             </div>
 
@@ -227,8 +227,8 @@ const ownerNotificationTemplate = (applicationData) => {
   const text = `
 New Internship Application Received
 
-Position: ${internship.title}
-Company: ${internship.company}
+Position: ${opportunity.title}
+Company: ${opportunity.company}
 
 Applicant Details:
 - Name: ${applicant.firstName} ${applicant.lastName}

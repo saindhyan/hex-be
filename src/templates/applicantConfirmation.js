@@ -2,11 +2,11 @@
 const applicantConfirmationTemplate = (applicationData) => {
   const {
     applicant,
-    internship,
+    opportunity,
     submittedAt
   } = applicationData;
 
-  const subject = `Application Confirmed: ${internship.title} at ${internship.company}`;
+  const subject = `Application Confirmed: ${opportunity.title} at ${opportunity.company}`;
 
   const html = `
     <!DOCTYPE html>
@@ -175,11 +175,11 @@ const applicantConfirmationTemplate = (applicationData) => {
                 <div class="info-grid">
                     <div class="info-item">
                         <div class="info-label">Position Applied For</div>
-                        <div class="info-value">${internship.title}</div>
+                        <div class="info-value">${opportunity.title}</div>
                     </div>
                     <div class="info-item">
                         <div class="info-label">Company</div>
-                        <div class="info-value">${internship.company}</div>
+                        <div class="info-value">${opportunity.company}</div>
                     </div>
                     <div class="info-item">
                         <div class="info-label">Application ID</div>
@@ -273,15 +273,15 @@ const applicantConfirmationTemplate = (applicationData) => {
   `;
 
   const text = `
-Application Confirmation - ${internship.title} at ${internship.company}
+Application Confirmation - ${opportunity.title} at ${opportunity.company}
 
 Dear ${applicant.firstName} ${applicant.lastName},
 
-Thank you for your application! We have successfully received your application for the ${internship.title} position at ${internship.company}.
+Thank you for your application! We have successfully received your application for the ${opportunity.title} position at ${opportunity.company}.
 
 Application Details:
-- Position: ${internship.title}
-- Company: ${internship.company}
+- Position: ${opportunity.title}
+- Company: ${opportunity.company}
 - Application ID: #${Date.now().toString().slice(-6)}
 - Submitted: ${new Date(submittedAt).toLocaleString()}
 
