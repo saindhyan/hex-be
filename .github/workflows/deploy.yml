@@ -85,17 +85,24 @@ jobs:
       if: ${{ secrets.VERCEL_TOKEN }}
       run: |
         echo "🚀 Deploying to Vercel Production..."
-        vercel --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
+        DEPLOYMENT_URL=$(vercel --prod --token=${{ secrets.VERCEL_TOKEN }} --yes)
+        echo "DEPLOYMENT_URL=$DEPLOYMENT_URL" >> $GITHUB_ENV
+        echo "✅ Deployment completed successfully!"
+        echo "🌐 Production URL: $DEPLOYMENT_URL"
       env:
         VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
         VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     
-    - name: Deployment Status
+    - name: Display Deployment Information
       if: ${{ secrets.VERCEL_TOKEN }}
       run: |
-        echo "✅ Deployment completed successfully!"
-        echo "🌐 Production URL: https://hexsyn-server.vercel.app"
-        echo "🔍 Check deployment: https://vercel.com/dashboard"
+        echo "================================================"
+        echo "🎉 DEPLOYMENT SUCCESSFUL!"
+        echo "================================================"
+        echo "🌐 Live URL: ${{ env.DEPLOYMENT_URL }}"
+        echo "🔍 Vercel Dashboard: https://vercel.com/dashboard"
+        echo "📊 Health Check: ${{ env.DEPLOYMENT_URL }}/api/health"
+        echo "================================================"
     
     - name: Missing Vercel Secrets
       if: ${{ !secrets.VERCEL_TOKEN }}
