@@ -24,19 +24,33 @@ class EmailService {
       
       this.transporter = createTransporter();
       
-      // Verify connection
+      // Verify connection with timeout
       try {
         console.log('🔍 Verifying SMTP connection...');
-        await this.transporter.verify();
+        
+        // Add timeout to prevent hanging in serverless environment
+        const verifyPromise = this.transporter.verify();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('SMTP verification timeout')), 10000)
+        );
+        
+        await Promise.race([verifyPromise, timeoutPromise]);
         console.log('✅ SMTP connection verified successfully');
       } catch (error) {
         console.error('❌ SMTP connection failed:', {
           message: error.message,
           code: error.code,
           command: error.command,
-          response: error.response
+          response: error.response,
+          isTimeout: error.message === 'SMTP verification timeout'
         });
-        throw new Error('Email service initialization failed');
+        
+        // Don't throw error for timeout - continue with email sending
+        if (error.message === 'SMTP verification timeout') {
+          console.log('⚠️ SMTP verification timed out, proceeding with email sending...');
+        } else {
+          throw new Error('Email service initialization failed');
+        }
       }
     }
     return this.transporter;
@@ -177,7 +191,14 @@ class EmailService {
       };
 
       console.log('📤 Sending admin notification email...');
-      const result = await this.transporter.sendMail(mailOptions);
+      
+      // Add timeout for email sending
+      const sendPromise = this.transporter.sendMail(mailOptions);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Email send timeout')), 30000)
+      );
+      
+      const result = await Promise.race([sendPromise, timeoutPromise]);
       console.log('✅ Contact admin notification sent successfully:', {
         messageId: result.messageId,
         recipient: adminEmail,
@@ -195,7 +216,8 @@ class EmailService {
         code: error.code,
         command: error.command,
         response: error.response,
-        stack: error.stack
+        stack: error.stack,
+        isTimeout: error.message === 'Email send timeout'
       });
       throw new Error(`Contact admin notification failed: ${error.message}`);
     }
@@ -228,7 +250,14 @@ class EmailService {
       };
 
       console.log('📤 Sending user confirmation email...');
-      const result = await this.transporter.sendMail(mailOptions);
+      
+      // Add timeout for email sending
+      const sendPromise = this.transporter.sendMail(mailOptions);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Email send timeout')), 30000)
+      );
+      
+      const result = await Promise.race([sendPromise, timeoutPromise]);
       console.log('✅ Contact user confirmation sent successfully:', {
         messageId: result.messageId,
         recipient: contactData.email,
@@ -246,7 +275,8 @@ class EmailService {
         code: error.code,
         command: error.command,
         response: error.response,
-        stack: error.stack
+        stack: error.stack,
+        isTimeout: error.message === 'Email send timeout'
       });
       throw new Error(`Contact user confirmation failed: ${error.message}`);
     }
