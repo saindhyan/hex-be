@@ -29,13 +29,32 @@ router.post('/', applicationRateLimit, validateApplication, async (req, res) => 
 
     console.log('Processing application from:', applicationData.applicant.firstName, applicationData.applicant.lastName);
     
-    // Send emails asynchronously and return immediately
-    const asyncResult = emailService.sendBothEmailsAsync(applicationData, ownerEmail);
+    // Send emails synchronously for debugging
+    console.log('🚀 Sending application emails synchronously for debugging...');
+    const emailResults = await emailService.sendBothEmails(applicationData, ownerEmail);
+    console.log('📧 Application email sending results:', emailResults);
     
-    res.status(200).json({
-      message: 'Application submitted successfully! Confirmation emails are being sent.',
-      success: true,
-      status: asyncResult.status,
+    const hasErrors = emailResults.errors.length > 0;
+    const allSuccess = emailResults.ownerNotification && emailResults.applicantConfirmation;
+    
+    res.status(hasErrors && !allSuccess ? 500 : 200).json({
+      message: allSuccess ? 'Application submitted and emails sent successfully!' : 
+               hasErrors ? 'Application submitted but some emails failed' : 
+               'Application submitted successfully!',
+      success: !hasErrors || allSuccess,
+      emailStatus: {
+        ownerNotification: {
+          success: !!emailResults.ownerNotification,
+          messageId: emailResults.ownerNotification?.messageId,
+          recipient: emailResults.ownerNotification?.recipient
+        },
+        applicantConfirmation: {
+          success: !!emailResults.applicantConfirmation,
+          messageId: emailResults.applicantConfirmation?.messageId,
+          recipient: emailResults.applicantConfirmation?.recipient
+        },
+        errors: emailResults.errors
+      },
       details: {
         applicant: applicationData.applicant.email,
         owner: ownerEmail,
