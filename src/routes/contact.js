@@ -37,15 +37,15 @@ router.post('/', contactRateLimit, validateContact, async (req, res) => {
       adminEmail: process.env.ADMIN_EMAIL ? '✓ Set' : '✗ Missing'
     });
     
-    // Send emails asynchronously and return immediately
-    console.log('🚀 Initiating async email sending...');
-    const asyncResult = emailService.sendContactEmailsAsync(contactData);
-    console.log('✅ Async email process started:', asyncResult);
+    // Send emails synchronously for debugging
+    console.log('🚀 Initiating SYNC email sending...');
+    const syncResult = emailService.sendContactEmailsSync(contactData);
+    console.log('✅ Sync email process completed:', syncResult);
     
     res.status(200).json({
       message: 'Contact form submitted successfully! We will get back to you soon.',
       success: true,
-      status: asyncResult.status,
+      status: syncResult.status,
       details: {
         name: `${contactData.firstName} ${contactData.lastName}`,
         email: contactData.email,
