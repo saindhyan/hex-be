@@ -205,12 +205,16 @@ const contactNotificationTemplate = (contactData) => {
           <a href="mailto:${email}?subject=Re: ${encodeURIComponent(subject)}" class="btn">
             📧 Reply to ${firstName}
           </a>
+          <a href="https://docs.google.com/spreadsheets/d/${process.env.GOOGLE_SHEETS_ID}/edit#gid=0" class="btn" target="_blank" style="background: #28a745;">
+            📊 View in Google Sheets
+          </a>
         </div>
 
         <div class="footer">
           <p><strong>HexSyn Data Solutions</strong> - Contact Form Notification</p>
           <div class="timestamp">
-            Submitted on: ${formattedDate}
+            Submitted on: ${formattedDate}<br>
+            <strong>📊 Data Logged:</strong> <a href="https://docs.google.com/spreadsheets/d/${process.env.GOOGLE_SHEETS_ID}/edit#gid=0" target="_blank" style="color: #667eea;">View ContactUs Sheet</a>
           </div>
         </div>
       </div>
@@ -235,6 +239,8 @@ Message Details:
 Submitted on: ${formattedDate}
 
 Reply to this inquiry: ${email}
+
+View all contact forms in Google Sheets: https://docs.google.com/spreadsheets/d/${process.env.GOOGLE_SHEETS_ID}/edit#gid=0
   `;
 
   return {

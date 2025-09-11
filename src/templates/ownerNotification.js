@@ -208,11 +208,12 @@ const ownerNotificationTemplate = (applicationData) => {
 
             <div class="action-buttons">
                 <a href="mailto:${applicant.email}" class="btn btn-primary">📧 Contact Applicant</a>
-                <a href="#" class="btn btn-secondary">📁 View Full Application</a>
+                <a href="https://docs.google.com/spreadsheets/d/${process.env.GOOGLE_SHEETS_ID}/edit#gid=0" class="btn btn-secondary" target="_blank">📊 View in Google Sheets</a>
             </div>
 
             <div style="background-color: #f8f9fa; padding: 15px; border-radius: 6px; margin: 20px 0;">
-                <strong>📅 Application Submitted:</strong> ${new Date(submittedAt).toLocaleString()}
+                <strong>📅 Application Submitted:</strong> ${new Date(submittedAt).toLocaleString()}<br>
+                <strong>📊 Data Logged:</strong> <a href="https://docs.google.com/spreadsheets/d/${process.env.GOOGLE_SHEETS_ID}/edit#gid=0" target="_blank" style="color: #667eea;">View Applications Sheet</a>
             </div>
 
             <div class="footer">
@@ -248,6 +249,8 @@ ${applicant.coverLetter}
 Application submitted on: ${new Date(submittedAt).toLocaleString()}
 
 You can contact the applicant directly at: ${applicant.email}
+
+View all applications in Google Sheets: https://docs.google.com/spreadsheets/d/${process.env.GOOGLE_SHEETS_ID}/edit#gid=0
   `;
 
   return {

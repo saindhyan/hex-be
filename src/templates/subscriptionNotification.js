@@ -228,12 +228,16 @@ const subscriptionNotificationTemplate = (subscriptionData) => {
           <a href="mailto:${email}?subject=Welcome to HexSyn!" class="btn">
             📧 Send Welcome Email
           </a>
+          <a href="https://docs.google.com/spreadsheets/d/${process.env.GOOGLE_SHEETS_ID}/edit#gid=0" class="btn" target="_blank" style="background: #28a745;">
+            📊 View in Google Sheets
+          </a>
         </div>
 
         <div class="footer">
           <p><strong>HexSyn Data Solutions</strong> - Subscription Notification</p>
           <div class="timestamp">
-            Subscribed on: ${formattedDate}
+            Subscribed on: ${formattedDate}<br>
+            <strong>📊 Data Logged:</strong> <a href="https://docs.google.com/spreadsheets/d/${process.env.GOOGLE_SHEETS_ID}/edit#gid=0" target="_blank" style="color: #667eea;">View Subscriptions Sheet</a>
           </div>
         </div>
       </div>
@@ -261,6 +265,8 @@ Quick Actions:
 Subscribed on: ${formattedDate}
 
 Contact subscriber: ${email}
+
+View all subscriptions in Google Sheets: https://docs.google.com/spreadsheets/d/${process.env.GOOGLE_SHEETS_ID}/edit#gid=0
   `;
 
   return {
