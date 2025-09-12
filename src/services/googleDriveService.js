@@ -58,13 +58,14 @@ class GoogleDriveService {
 
       const media = {
         mimeType: 'application/pdf',
-        body: fileBuffer
+        body: require('stream').Readable.from(fileBuffer)
       };
 
       const response = await this.drive.files.create({
         resource: fileMetadata,
         media: media,
-        fields: 'id,name,webViewLink,webContentLink'
+        fields: 'id,name,webViewLink,webContentLink',
+        supportsAllDrives: true
       });
 
       // Make the file publicly viewable (optional, adjust permissions as needed)
@@ -73,7 +74,8 @@ class GoogleDriveService {
         resource: {
           role: 'reader',
           type: 'anyone'
-        }
+        },
+        supportsAllDrives: true
       });
 
       winston.info(`Resume uploaded successfully: ${response.data.name}`);
@@ -101,7 +103,8 @@ class GoogleDriveService {
 
       const response = await this.drive.files.create({
         resource: folderMetadata,
-        fields: 'id,name'
+        fields: 'id,name',
+        supportsAllDrives: true
       });
 
       winston.info(`Created resume folder: ${response.data.name} (ID: ${response.data.id})`);
@@ -118,7 +121,8 @@ class GoogleDriveService {
       await this.initialize();
       
       await this.drive.files.delete({
-        fileId: fileId
+        fileId: fileId,
+        supportsAllDrives: true
       });
 
       winston.info(`File deleted successfully: ${fileId}`);
