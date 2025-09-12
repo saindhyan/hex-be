@@ -58,7 +58,7 @@ class GoogleDriveService {
 
       const media = {
         mimeType: 'application/pdf',
-        body: require('stream').Readable.from(fileBuffer)
+        body: fileBuffer
       };
 
       const response = await this.drive.files.create({
