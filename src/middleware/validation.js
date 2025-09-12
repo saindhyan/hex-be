@@ -49,6 +49,27 @@ const subscriptionSchema = Joi.object({
   ).min(1).required()
 });
 
+// Validation schema for career application submission
+const careerApplicationSchema = Joi.object({
+  firstName: Joi.string().trim().min(1).max(50).required(),
+  lastName: Joi.string().trim().min(1).max(50).required(),
+  email: Joi.string().email().required(),
+  phone: Joi.string().trim().min(10).max(20).required(),
+  location: Joi.string().trim().min(1).max(100).required(),
+  experience: Joi.string().valid('entry', 'mid', 'senior', 'executive').required(),
+  availability: Joi.string().valid('immediate', '2weeks', '1month', '2months', '3months').required(),
+  salary: Joi.string().trim().allow('').optional(),
+  coverLetter: Joi.string().trim().allow('').optional(),
+  portfolio: Joi.string().uri().allow('').optional(),
+  linkedin: Joi.string().uri().allow('').optional(),
+  github: Joi.string().uri().allow('').optional(),
+  agreeToTerms: Joi.boolean().valid(true).required(),
+  allowContact: Joi.boolean().required(),
+  jobId: Joi.number().integer().positive().required(),
+  jobTitle: Joi.string().trim().min(1).max(100).required(),
+  department: Joi.string().trim().min(1).max(100).required()
+});
+
 const validateApplication = (req, res, next) => {
   const { error, value } = applicationSchema.validate(req.body, {
     abortEarly: false,
@@ -115,8 +136,31 @@ const validateSubscription = (req, res, next) => {
   next();
 };
 
+const validateCareerApplication = (req, res, next) => {
+  const { error, value } = careerApplicationSchema.validate(req.body, {
+    abortEarly: false,
+    stripUnknown: true
+  });
+
+  if (error) {
+    const validationErrors = error.details.map(detail => ({
+      field: detail.path.join('.'),
+      message: detail.message
+    }));
+
+    return res.status(400).json({
+      error: 'Validation failed',
+      details: validationErrors
+    });
+  }
+
+  req.validatedData = value;
+  next();
+};
+
 module.exports = {
   validateApplication,
   validateContact,
-  validateSubscription
+  validateSubscription,
+  validateCareerApplication
 };

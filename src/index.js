@@ -8,6 +8,7 @@ require('dotenv').config();
 const applicationRoutes = require('./routes/application');
 const contactRoutes = require('./routes/contact');
 const subscriptionRoutes = require('./routes/subscription');
+const careerRoutes = require('./routes/career');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -30,6 +31,7 @@ app.use(limiter);
 const allowedOrigins = [
   'https://hexsyn-datalabs.web.app',
   'http://10.189.19.73:8080',
+  'http://10.45.195.11:8080',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
@@ -64,6 +66,7 @@ app.use(morgan('combined'));
 app.use('/api/application', applicationRoutes);
 app.use('/api/contact-us', contactRoutes);
 app.use('/api/subscription', subscriptionRoutes);
+app.use('/api/career', careerRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

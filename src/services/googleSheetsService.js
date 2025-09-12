@@ -28,7 +28,7 @@ class GoogleSheetsService {
 
       const auth = new google.auth.GoogleAuth({
         credentials,
-        scopes: ['https://www.googleapis.com/auth/spreadsheets']
+        scopes: ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive.file']
       });
 
       this.sheets = google.sheets({ version: 'v4', auth });
@@ -271,6 +271,54 @@ class GoogleSheetsService {
       winston.info('Contact form logged to Google Sheets');
     } catch (error) {
       winston.error('Error logging contact form to Google Sheets:', error);
+      // Don't throw error to prevent breaking the main application flow
+    }
+  }
+
+  async logCareerApplication(applicationData) {
+    try {
+      const {
+        firstName, lastName, email, phone, location, experience, availability,
+        salary, coverLetter, portfolio, linkedin, github, agreeToTerms, allowContact,
+        jobId, jobTitle, department, resumeLink, resumeFileName, submittedAt
+      } = applicationData;
+      
+      const headers = [
+        'Timestamp', 'First Name', 'Last Name', 'Email', 'Phone', 'Location',
+        'Experience Level', 'Availability', 'Salary Expectation', 'Cover Letter',
+        'Portfolio', 'LinkedIn', 'GitHub', 'Agree to Terms', 'Allow Contact',
+        'Job ID', 'Job Title', 'Department', 'Resume Link', 'Resume File Name'
+      ];
+      
+      await this.setupSheetHeaders('Career Applications', headers);
+      
+      const values = [
+        submittedAt || new Date().toISOString(),
+        firstName || '',
+        lastName || '',
+        email || '',
+        phone || '',
+        location || '',
+        experience || '',
+        availability || '',
+        salary || '',
+        coverLetter || '',
+        portfolio || '',
+        linkedin || '',
+        github || '',
+        agreeToTerms ? 'Yes' : 'No',
+        allowContact ? 'Yes' : 'No',
+        jobId || '',
+        jobTitle || '',
+        department || '',
+        resumeLink || '',
+        resumeFileName || ''
+      ];
+      
+      await this.appendRow('Career Applications', values);
+      winston.info('Career application logged to Google Sheets');
+    } catch (error) {
+      winston.error('Error logging career application to Google Sheets:', error);
       // Don't throw error to prevent breaking the main application flow
     }
   }

@@ -5,6 +5,8 @@ const contactNotificationTemplate = require('../templates/contactNotification');
 const contactConfirmationTemplate = require('../templates/contactConfirmation');
 const subscriptionNotificationTemplate = require('../templates/subscriptionNotification');
 const subscriptionConfirmationTemplate = require('../templates/subscriptionConfirmation');
+const careerAdminNotificationTemplate = require('../templates/careerAdminNotification');
+const careerApplicantConfirmationTemplate = require('../templates/careerApplicantConfirmation');
 
 class EmailService {
   constructor() {
@@ -495,6 +497,209 @@ class EmailService {
     
     return {
       message: 'Emails are being sent in the background',
+      status: 'processing'
+    };
+  }
+
+  async sendCareerAdminNotification(applicationData, resumeBuffer = null) {
+    try {
+      console.log('📬 Sending career admin notification...');
+      await this.initializeTransporter();
+      
+      const template = careerAdminNotificationTemplate(applicationData);
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@hexsyndatalabs.com';
+      
+      console.log('📋 Career admin notification details:', {
+        adminEmail,
+        applicantEmail: applicationData.email,
+        jobTitle: applicationData.jobTitle,
+        subject: template.subject
+      });
+      
+      const mailOptions = {
+        from: `${emailConfig.from.name} <${emailConfig.from.address}>`,
+        to: adminEmail,
+        replyTo: applicationData.email,
+        subject: template.subject,
+        html: template.html,
+        text: template.text,
+        priority: 'high',
+        headers: {
+          'X-Career-Application-Type': 'admin-notification',
+          'X-Career-Application-ID': `career_${Date.now()}`,
+          'X-Job-ID': applicationData.jobId
+        }
+      };
+
+      // Add resume attachment if provided
+      if (resumeBuffer && applicationData.resumeFileName) {
+        mailOptions.attachments = [{
+          filename: applicationData.resumeFileName,
+          content: resumeBuffer,
+          contentType: 'application/pdf'
+        }];
+        console.log('📎 Resume attachment added:', applicationData.resumeFileName);
+      }
+
+      console.log('📤 Sending career admin notification email...');
+      
+      // Add timeout for email sending
+      const sendPromise = this.transporter.sendMail(mailOptions);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Email send timeout')), 30000)
+      );
+      
+      const result = await Promise.race([sendPromise, timeoutPromise]);
+      console.log('✅ Career admin notification sent successfully:', {
+        messageId: result.messageId,
+        recipient: adminEmail,
+        response: result.response
+      });
+      
+      return {
+        success: true,
+        messageId: result.messageId,
+        recipient: adminEmail
+      };
+    } catch (error) {
+      console.error('❌ Failed to send career admin notification:', {
+        message: error.message,
+        code: error.code,
+        command: error.command,
+        response: error.response,
+        stack: error.stack,
+        isTimeout: error.message === 'Email send timeout'
+      });
+      throw new Error(`Career admin notification failed: ${error.message}`);
+    }
+  }
+
+  async sendCareerApplicantConfirmation(applicationData) {
+    try {
+      console.log('📧 Sending career applicant confirmation...');
+      await this.initializeTransporter();
+      
+      const template = careerApplicantConfirmationTemplate(applicationData);
+      
+      console.log('📋 Career applicant confirmation details:', {
+        applicantEmail: applicationData.email,
+        jobTitle: applicationData.jobTitle,
+        subject: template.subject
+      });
+      
+      const mailOptions = {
+        from: `${emailConfig.from.name} <${emailConfig.from.address}>`,
+        to: applicationData.email,
+        replyTo: emailConfig.replyTo,
+        subject: template.subject,
+        html: template.html,
+        text: template.text,
+        priority: 'normal',
+        headers: {
+          'X-Career-Application-Type': 'applicant-confirmation',
+          'X-Career-Application-ID': `career_${Date.now()}`,
+          'X-Job-ID': applicationData.jobId
+        }
+      };
+
+      console.log('📤 Sending career applicant confirmation email...');
+      
+      // Add timeout for email sending
+      const sendPromise = this.transporter.sendMail(mailOptions);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Email send timeout')), 30000)
+      );
+      
+      const result = await Promise.race([sendPromise, timeoutPromise]);
+      console.log('✅ Career applicant confirmation sent successfully:', {
+        messageId: result.messageId,
+        recipient: applicationData.email,
+        response: result.response
+      });
+      
+      return {
+        success: true,
+        messageId: result.messageId,
+        recipient: applicationData.email
+      };
+    } catch (error) {
+      console.error('❌ Failed to send career applicant confirmation:', {
+        message: error.message,
+        code: error.code,
+        command: error.command,
+        response: error.response,
+        stack: error.stack,
+        isTimeout: error.message === 'Email send timeout'
+      });
+      throw new Error(`Career applicant confirmation failed: ${error.message}`);
+    }
+  }
+
+  async sendCareerEmails(applicationData, resumeBuffer = null) {
+    const results = {
+      adminNotification: null,
+      applicantConfirmation: null,
+      errors: []
+    };
+
+    // Send both emails in parallel
+    const [adminResult, applicantResult] = await Promise.allSettled([
+      this.sendCareerAdminNotification(applicationData, resumeBuffer),
+      this.sendCareerApplicantConfirmation(applicationData)
+    ]);
+
+    // Process admin notification result
+    if (adminResult.status === 'fulfilled') {
+      results.adminNotification = adminResult.value;
+    } else {
+      results.errors.push({
+        type: 'admin_notification',
+        message: adminResult.reason.message
+      });
+    }
+
+    // Process applicant confirmation result
+    if (applicantResult.status === 'fulfilled') {
+      results.applicantConfirmation = applicantResult.value;
+    } else {
+      results.errors.push({
+        type: 'applicant_confirmation',
+        message: applicantResult.reason.message
+      });
+    }
+
+    return results;
+  }
+
+  sendCareerEmailsAsync(applicationData, resumeBuffer = null) {
+    console.log('📨 Starting async career email process for:', applicationData.email);
+    
+    // Return immediately, don't wait for emails
+    setImmediate(async () => {
+      try {
+        console.log('🚀 Executing career email sending...');
+        const results = await this.sendCareerEmails(applicationData, resumeBuffer);
+        console.log('📧 Career emails processing complete:', {
+          adminSuccess: !!results.adminNotification,
+          applicantSuccess: !!results.applicantConfirmation,
+          errors: results.errors.length,
+          errorDetails: results.errors
+        });
+        
+        if (results.errors.length > 0) {
+          console.error('⚠️ Career email errors occurred:', results.errors);
+        }
+      } catch (error) {
+        console.error('💥 Async career email sending failed:', {
+          message: error.message,
+          stack: error.stack,
+          applicantEmail: applicationData.email
+        });
+      }
+    });
+    
+    return {
+      message: 'Career emails are being sent in the background',
       status: 'processing'
     };
   }
