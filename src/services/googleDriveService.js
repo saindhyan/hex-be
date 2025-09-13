@@ -42,13 +42,19 @@ class GoogleDriveService {
   }
 
   async uploadResume(fileBuffer, fileName, applicantName, jobTitle) {
+    let stream = null;
+    
     try {
+      if (!fileBuffer || !fileName) {
+        throw new Error('File buffer and file name are required');
+      }
+      
       await this.initialize();
 
       // Create a unique filename with timestamp
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const sanitizedApplicantName = applicantName.replace(/[^a-zA-Z0-9]/g, '_');
-      const sanitizedJobTitle = jobTitle.replace(/[^a-zA-Z0-9]/g, '_');
+      const sanitizedApplicantName = (applicantName || 'applicant').replace(/[^a-zA-Z0-9]/g, '_');
+      const sanitizedJobTitle = (jobTitle || 'application').replace(/[^a-zA-Z0-9]/g, '_');
       const uniqueFileName = `${timestamp}_${sanitizedApplicantName}_${sanitizedJobTitle}_${fileName}`;
 
       const fileMetadata = {
@@ -58,33 +64,57 @@ class GoogleDriveService {
 
       const { Readable } = require('stream');
       
-      // Convert Buffer to stream for Google Drive API
-      const stream = new Readable();
+      // Convert Buffer to stream for Google Drive API with proper error handling
+      stream = new Readable();
       stream.push(fileBuffer);
       stream.push(null);
+
+      // Handle stream errors
+      stream.on('error', (error) => {
+        winston.error('Stream error during upload:', error);
+        throw error;
+      });
 
       const media = {
         mimeType: 'application/pdf',
         body: stream
       };
-      
 
-      const response = await this.drive.files.create({
+      winston.info(`Starting upload for: ${uniqueFileName}`);
+      
+      // Upload with timeout
+      const uploadPromise = this.drive.files.create({
         resource: fileMetadata,
         media: media,
         fields: 'id,name,webViewLink,webContentLink',
         supportsAllDrives: true
       });
 
-      // Make the file publicly viewable (optional, adjust permissions as needed)
-      await this.drive.permissions.create({
-        fileId: response.data.id,
-        resource: {
-          role: 'reader',
-          type: 'anyone'
-        },
-        supportsAllDrives: true
+      // Set a timeout for the upload (30 seconds)
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Google Drive upload timed out after 30 seconds'));
+        }, 30000);
       });
+
+      const response = await Promise.race([uploadPromise, timeoutPromise]);
+
+      winston.info(`File uploaded, setting permissions: ${response.data.name}`);
+      
+      // Set file permissions
+      try {
+        await this.drive.permissions.create({
+          fileId: response.data.id,
+          requestBody: {
+            role: 'reader',
+            type: 'anyone'
+          },
+          supportsAllDrives: true
+        });
+      } catch (permError) {
+        // Log permission error but don't fail the upload
+        winston.warn(`Failed to set public permissions for ${response.data.id}:`, permError);
+      }
 
       winston.info(`Resume uploaded successfully: ${response.data.name}`);
       
@@ -95,8 +125,19 @@ class GoogleDriveService {
         downloadLink: response.data.webContentLink
       };
     } catch (error) {
-      winston.error('Error uploading resume to Google Drive:', error);
-      throw error;
+      winston.error('Error in uploadResume:', {
+        error: error.message,
+        stack: error.stack,
+        fileName,
+        applicantName,
+        jobTitle
+      });
+      throw new Error(`Failed to upload resume: ${error.message}`);
+    } finally {
+      // Ensure stream is properly destroyed
+      if (stream) {
+        stream.destroy();
+      }
     }
   }
 

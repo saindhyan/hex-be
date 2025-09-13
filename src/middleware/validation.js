@@ -55,20 +55,20 @@ const careerApplicationSchema = Joi.object({
   lastName: Joi.string().trim().min(1).max(50).required(),
   email: Joi.string().email().required(),
   phone: Joi.string().trim().min(10).max(20).required(),
-  location: Joi.string().trim().min(1).max(100).required(),
-  experience: Joi.string().valid('entry', 'mid', 'senior', 'executive').required(),
-  availability: Joi.string().valid('immediate', '2weeks', '1month', '2months', '3months').required(),
-  salary: Joi.string().trim().allow('').optional(),
-  coverLetter: Joi.string().trim().allow('').optional(),
-  portfolio: Joi.string().uri().allow('').optional(),
-  linkedin: Joi.string().uri().allow('').optional(),
-  github: Joi.string().uri().allow('').optional(),
+  location: Joi.string().trim().min(1).max(100).allow('').default(''),
+  experience: Joi.string().valid('entry', 'mid', 'senior', 'executive').allow('').default(''),
+  availability: Joi.string().valid('immediate', '2weeks', '1month', '2months', '3months').allow('').default(''),
+  salary: Joi.string().trim().allow('').default(''),
+  coverLetter: Joi.string().trim().allow('').default(''),
+  portfolio: Joi.string().uri().allow('').default(''),
+  linkedin: Joi.string().uri().allow('').default(''),
+  github: Joi.string().uri().allow('').default(''),
   agreeToTerms: Joi.boolean().valid(true).required(),
-  allowContact: Joi.boolean().required(),
+  allowContact: Joi.boolean().default(false),
   jobId: Joi.number().integer().positive().required(),
-  jobTitle: Joi.string().trim().min(1).max(100).required(),
-  department: Joi.string().trim().min(1).max(100).required()
-});
+  jobTitle: Joi.string().trim().min(1).max(100).default(''),
+  department: Joi.string().trim().min(1).max(100).default('')
+}).options({ stripUnknown: true });
 
 const validateApplication = (req, res, next) => {
   const { error, value } = applicationSchema.validate(req.body, {

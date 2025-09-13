@@ -34,8 +34,13 @@ const careerRateLimit = rateLimit({
   }
 });
 
-// Career application endpoint
-router.post('/', careerRateLimit, upload.single('resume'), validateCareerApplication, async (req, res) => {
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+// Career application endpoint - Processed synchronously
+router.post('/', careerRateLimit, upload.single('resume'), validateCareerApplication, async (req, res, next) => {
   try {
     const applicationData = req.validatedData;
     const resumeFile = req.file;
@@ -77,13 +82,27 @@ router.post('/', careerRateLimit, upload.single('resume'), validateCareerApplica
       submittedAt: new Date().toISOString()
     };
     
-    // Log to Google Sheets (async, non-blocking)
-    googleSheetsService.logCareerApplication(completeApplicationData).catch(error => {
-      console.error('Google Sheets logging failed:', error);
-    });
-    
-    // Send emails to both admin and applicant (async, non-blocking)
-    emailService.sendCareerEmailsAsync(completeApplicationData, resumeFile?.buffer);
+    try {
+      // 1. First log to Google Sheets
+      console.log('Saving to Google Sheets...');
+      await googleSheetsService.logCareerApplication(completeApplicationData);
+      console.log('Successfully saved to Google Sheets');
+      
+      // 2. Then send emails (if enabled)
+      if (emailService.sendCareerEmailsAsync) {
+        console.log('Sending emails...');
+        await emailService.sendCareerEmailsAsync(completeApplicationData, resumeFile?.buffer);
+        console.log('Successfully sent emails');
+      } else {
+        console.warn('Email service not available, skipping email sending');
+      }
+      
+      console.log('All operations completed successfully');
+    } catch (error) {
+      console.error('Error processing application:', error);
+      // Continue to send success response even if emails fail
+      // but log the error for debugging
+    }
     
     res.status(200).json({
       message: 'Career application submitted successfully! Confirmation emails are being sent.',
