@@ -671,37 +671,58 @@ class EmailService {
     return results;
   }
 
-  sendCareerEmailsAsync(applicationData, resumeBuffer = null) {
-    console.log('📨 Starting async career email process for:', applicationData.email);
+  async sendCareerEmailsAsync(applicationData, resumeBuffer = null) {
+    console.log('📨 Starting career email process for:', applicationData.email);
     
-    // Return immediately, don't wait for emails
-    setImmediate(async () => {
-      try {
-        console.log('🚀 Executing career email sending...');
-        const results = await this.sendCareerEmails(applicationData, resumeBuffer);
-        console.log('📧 Career emails processing complete:', {
-          adminSuccess: !!results.adminNotification,
-          applicantSuccess: !!results.applicantConfirmation,
-          errors: results.errors.length,
-          errorDetails: results.errors
-        });
-        
-        if (results.errors.length > 0) {
-          console.error('⚠️ Career email errors occurred:', results.errors);
-        }
-      } catch (error) {
-        console.error('💥 Async career email sending failed:', {
-          message: error.message,
-          stack: error.stack,
-          applicantEmail: applicationData.email
-        });
+    try {
+      console.log('🚀 Executing career email sending...');
+      const results = await this.sendCareerEmails(applicationData, resumeBuffer);
+      
+      const response = {
+        success: results.errors.length === 0,
+        message: results.errors.length > 0 ? 'Some emails failed to send' : 'All emails sent successfully',
+        details: {
+          adminNotification: results.adminNotification ? {
+            success: true,
+            messageId: results.adminNotification.messageId,
+            recipient: results.adminNotification.recipient
+          } : null,
+          applicantConfirmation: results.applicantConfirmation ? {
+            success: true,
+            messageId: results.applicantConfirmation.messageId,
+            recipient: results.applicantConfirmation.recipient
+          } : null,
+          errors: results.errors
+        },
+        timestamp: new Date().toISOString()
+      };
+      
+      console.log('📧 Career emails processing complete:', {
+        adminSuccess: !!results.adminNotification,
+        applicantSuccess: !!results.applicantConfirmation,
+        errors: results.errors.length
+      });
+      
+      if (results.errors.length > 0) {
+        console.error('⚠️ Career email errors occurred:', results.errors);
       }
-    });
-    
-    return {
-      message: 'Career emails are being sent in the background',
-      status: 'processing'
-    };
+      
+      return response;
+      
+    } catch (error) {
+      console.error('💥 Career email sending failed:', {
+        message: error.message,
+        stack: error.stack,
+        applicantEmail: applicationData.email
+      });
+      
+      return {
+        success: false,
+        message: 'Failed to send career emails',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      };
+    }
   }
 
   async testConnection() {
