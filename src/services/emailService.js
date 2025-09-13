@@ -755,15 +755,41 @@ class EmailService {
       if (applicationData.resumeLink) {
         try {
           const response = await fetch(applicationData.resumeLink);
-          resumeBuffer = await response.buffer();
+          const arrayBuffer = await response.arrayBuffer();
+          resumeBuffer = Buffer.from(arrayBuffer);
         } catch (error) {
           console.error('Error downloading resume for email attachment:', error);
         }
       }
 
+      // Structure data for email templates
+      const templateData = {
+        applicant: {
+          firstName: applicationData.firstName,
+          lastName: applicationData.lastName,
+          email: applicationData.email,
+          phone: applicationData.phone,
+          university: applicationData.university,
+          major: applicationData.major,
+          graduationYear: applicationData.graduationYear,
+          gpa: applicationData.gpa,
+          linkedin: applicationData.linkedin,
+          portfolio: applicationData.portfolio,
+          availability: applicationData.availability,
+          duration: applicationData.duration
+        },
+        opportunity: {
+          title: applicationData.opportunityTitle,
+          company: applicationData.opportunityCompany,
+          id: applicationData.opportunityId
+        },
+        submittedAt: applicationData.submittedAt || new Date().toISOString(),
+        resumeLink: applicationData.resumeLink
+      };
+
       // Send owner notification with resume
       try {
-        const ownerTemplate = ownerNotificationTemplate(applicationData);
+        const ownerTemplate = ownerNotificationTemplate(templateData);
         const ownerMailOptions = {
           from: `${emailConfig.from.name} <${emailConfig.from.address}>`,
           to: applicationData.ownerEmail,
@@ -794,7 +820,7 @@ class EmailService {
       // Send admin notification with resume and sheets link
       try {
         const adminTemplate = ownerNotificationTemplate({
-          ...applicationData,
+          ...templateData,
           isAdmin: true,
           sheetsLink: process.env.GOOGLE_SHEETS_LINK || 'Google Sheets link not configured'
         });
@@ -828,7 +854,7 @@ class EmailService {
 
       // Send applicant confirmation (no attachments)
       try {
-        const applicantTemplate = applicantConfirmationTemplate(applicationData);
+        const applicantTemplate = applicantConfirmationTemplate(templateData);
         const applicantMailOptions = {
           from: `${emailConfig.from.name} <${emailConfig.from.address}>`,
           to: applicationData.email,
