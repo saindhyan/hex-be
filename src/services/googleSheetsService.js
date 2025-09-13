@@ -48,7 +48,37 @@ class GoogleSheetsService {
       const sheetName = 'Applications';
       await this.ensureSheetExists(sheetName);
       
-      // Prepare the row data in the correct order
+      // Define headers in the same order as the row data
+      const headers = [
+        'Timestamp',
+        'First Name',
+        'Last Name',
+        'Email',
+        'Phone',
+        'University',
+        'Major',
+        'Graduation Year',
+        'GPA',
+        'Cover Letter',
+        'LinkedIn',
+        'Portfolio',
+        'Availability',
+        'Duration',
+        'Transaction ID',
+        'Payment Done',
+        'Payment Amount',
+        'Opportunity ID',
+        'Opportunity Title',
+        'Opportunity Company',
+        'Owner Email',
+        'Resume Link',
+        'Resume File Name'
+      ];
+      
+      // Ensure headers are set up
+      await this.setupSheetHeaders(sheetName, headers);
+      
+      // Prepare the row data in the correct order (must match headers order)
       const row = [
         new Date().toISOString(),  // Timestamp
         applicationData.firstName || '',
