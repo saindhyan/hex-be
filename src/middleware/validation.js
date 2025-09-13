@@ -81,7 +81,7 @@ const applicationSchema = Joi.object({
   // Payment details
   transactionId: Joi.string().trim().allow('').optional(),
   paymentDone: Joi.boolean().default(false),
-  paymentAmount: Joi.any().trim().allow('').optional(),
+  paymentAmount: Joi.number().required(),
   
   // Owner email
   ownerEmail: Joi.string().email().required()
