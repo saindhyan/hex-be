@@ -25,7 +25,7 @@ const upload = multer({
       cb(new Error('Only PDF files are allowed for resume upload'), false);
     }
   }
-}).single('resume');
+});
 
 // Rate limiting for application endpoint
 const applicationRateLimit = rateLimit({
