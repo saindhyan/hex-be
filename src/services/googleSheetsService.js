@@ -41,6 +41,60 @@ class GoogleSheetsService {
     }
   }
 
+  async logApplication(applicationData) {
+    try {
+      await this.initialize();
+      
+      const sheetName = 'Applications';
+      await this.ensureSheetExists(sheetName);
+      
+      // Prepare the row data in the correct order
+      const row = [
+        new Date().toISOString(),  // Timestamp
+        applicationData.firstName || '',
+        applicationData.lastName || '',
+        applicationData.email || '',
+        applicationData.phone || '',
+        applicationData.university || '',
+        applicationData.major || '',
+        applicationData.graduationYear || '',
+        applicationData.gpa || '',
+        applicationData.coverLetter || '',
+        applicationData.linkedin || '',
+        applicationData.portfolio || '',
+        applicationData.availability || '',
+        applicationData.duration || '',
+        applicationData.transactionId || '',
+        applicationData.paymentDone || 'false',
+        applicationData.paymentAmount || '0',
+        applicationData.opportunityId || '',
+        applicationData.opportunityTitle || '',
+        applicationData.opportunityCompany || '',
+        applicationData.ownerEmail || '',
+        applicationData.resumeLink || '',
+        applicationData.resumeFileName || ''
+      ];
+      
+      // Append the new row to the sheet
+      const response = await this.sheets.spreadsheets.values.append({
+        spreadsheetId: this.spreadsheetId,
+        range: `${sheetName}!A:W`,  // A:W covers all columns we're using
+        valueInputOption: 'USER_ENTERED',
+        insertDataOption: 'INSERT_ROWS',
+        resource: {
+          values: [row]
+        }
+      });
+      
+      winston.info('Application logged to Google Sheets:', response.data);
+      return response.data;
+      
+    } catch (error) {
+      winston.error('Error logging application to Google Sheets:', error);
+      throw error;
+    }
+  }
+
   async ensureSheetExists(sheetName) {
     try {
       await this.initialize();
