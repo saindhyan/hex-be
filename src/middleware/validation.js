@@ -92,7 +92,7 @@ const applicationSchema = Joi.object({
     }),
   
   // Resume file (handled by multer)
-  resume: Joi.any().meta({ type: 'file' }).required()
+  resume: Joi.object().required()
     .messages({
       'any.required': 'Resume file is required'
     })
