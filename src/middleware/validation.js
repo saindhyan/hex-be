@@ -2,29 +2,37 @@ const Joi = require('joi');
 
 // Validation schema for application submission
 const applicationSchema = Joi.object({
-  applicant: Joi.object({
-    firstName: Joi.string().trim().min(1).max(50).required(),
-    lastName: Joi.string().trim().min(1).max(50).required(),
-    email: Joi.string().email().required(),
-    phone: Joi.string().trim().min(10).max(20).required(),
-    university: Joi.string().trim().min(1).max(100).required(),
-    major: Joi.string().trim().min(1).max(100).required(),
-    graduationYear: Joi.string().trim().required(),
-    gpa: Joi.string().trim().allow('').optional(),
-    coverLetter: Joi.string().trim().allow('').optional(),
-    linkedin: Joi.string().uri().allow('').optional(),
-    portfolio: Joi.string().uri().allow('').optional(),
-    availability: Joi.string().trim().allow('').optional()
-  }).required(),
+  // Applicant details
+  firstName: Joi.string().trim().min(1).max(50).required(),
+  lastName: Joi.string().trim().min(1).max(50).required(),
+  email: Joi.string().email().required(),
+  phone: Joi.string().trim().min(10).max(20).required(),
+  university: Joi.string().trim().min(1).max(100).required(),
+  major: Joi.string().trim().min(1).max(100).required(),
+  graduationYear: Joi.string().trim().required(),
+  gpa: Joi.string().trim().allow('').optional(),
+  coverLetter: Joi.string().trim().allow('').optional(),
+  linkedin: Joi.string().uri().allow('').optional(),
+  portfolio: Joi.string().uri().allow('').optional(),
+  availability: Joi.string().trim().allow('').optional(),
+  duration: Joi.string().trim().allow('').optional(),
   
-  opportunity: Joi.object({
-    id: Joi.number().integer().positive().required(),
-    title: Joi.string().trim().min(1).max(100).required(),
-    company: Joi.string().trim().min(1).max(100).required()
-  }).required(),
+  // Opportunity details
+  opportunityId: Joi.number().integer().positive().required(),
+  opportunityTitle: Joi.string().trim().min(1).max(100).required(),
+  opportunityCompany: Joi.string().trim().min(1).max(100).required(),
   
-  ownerEmail: Joi.string().email().required()
-});
+  // Payment details
+  transactionId: Joi.string().trim().allow('').optional(),
+  paymentDone: Joi.boolean().default(false),
+  paymentAmount: Joi.string().trim().allow('').optional(),
+  
+  // Owner email
+  ownerEmail: Joi.string().email().required(),
+  
+  // Resume file (handled by multer)
+  resume: Joi.any().meta({ type: 'file' }).optional()
+}).options({ stripUnknown: true });
 
 // Validation schema for contact form submission
 const contactSchema = Joi.object({

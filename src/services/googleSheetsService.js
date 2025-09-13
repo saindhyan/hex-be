@@ -178,45 +178,6 @@ class GoogleSheetsService {
     }
   }
 
-  async logApplication(applicationData) {
-    try {
-      const { applicant, opportunity, ownerEmail } = applicationData;
-      
-      const headers = [
-        'Timestamp', 'First Name', 'Last Name', 'Email', 'Phone', 'University', 
-        'Major', 'Graduation Year', 'GPA', 'LinkedIn', 'Portfolio', 'Availability',
-        'Opportunity ID', 'Opportunity Title', 'Company', 'Owner Email', 'Cover Letter'
-      ];
-      
-      await this.setupSheetHeaders('Applications', headers);
-      
-      const values = [
-        new Date().toISOString(),
-        applicant.firstName || '',
-        applicant.lastName || '',
-        applicant.email || '',
-        applicant.phone || '',
-        applicant.university || '',
-        applicant.major || '',
-        applicant.graduationYear || '',
-        applicant.gpa || '',
-        applicant.linkedin || '',
-        applicant.portfolio || '',
-        applicant.availability || '',
-        opportunity.id || '',
-        opportunity.title || '',
-        opportunity.company || '',
-        ownerEmail || '',
-        applicant.coverLetter || ''
-      ];
-      
-      await this.appendRow('Applications', values);
-      winston.info('Application logged to Google Sheets');
-    } catch (error) {
-      winston.error('Error logging application to Google Sheets:', error);
-      // Don't throw error to prevent breaking the main application flow
-    }
-  }
 
   async logSubscription(subscriptionData) {
     try {
@@ -280,14 +241,19 @@ class GoogleSheetsService {
       const {
         firstName, lastName, email, phone, location, experience, availability,
         salary, coverLetter, portfolio, linkedin, github, agreeToTerms, allowContact,
-        jobId, jobTitle, department, resumeLink, resumeFileName, submittedAt
+        jobId, jobTitle, department, resumeLink, resumeFileName, submittedAt,
+        // Adding payment and opportunity fields
+        transactionId, paymentDone, paymentAmount, opportunityId,
+        opportunityTitle, opportunityCompany, ownerEmail, duration
       } = applicationData;
       
       const headers = [
         'Timestamp', 'First Name', 'Last Name', 'Email', 'Phone', 'Location',
-        'Experience Level', 'Availability', 'Salary Expectation', 'Cover Letter',
+        'Experience Level', 'Availability', 'Duration', 'Salary Expectation', 'Cover Letter',
         'Portfolio', 'LinkedIn', 'GitHub', 'Agree to Terms', 'Allow Contact',
-        'Job ID', 'Job Title', 'Department', 'Resume Link', 'Resume File Name'
+        'Job ID', 'Job Title', 'Department', 'Opportunity ID', 'Opportunity Title',
+        'Opportunity Company', 'Transaction ID', 'Payment Done', 'Payment Amount',
+        'Owner Email', 'Resume Link', 'Resume File Name'
       ];
       
       await this.setupSheetHeaders('Career Applications', headers);
@@ -301,6 +267,7 @@ class GoogleSheetsService {
         location || '',
         experience || '',
         availability || '',
+        duration || '',
         salary || '',
         coverLetter || '',
         portfolio || '',
@@ -311,6 +278,13 @@ class GoogleSheetsService {
         jobId || '',
         jobTitle || '',
         department || '',
+        opportunityId || '',
+        opportunityTitle || '',
+        opportunityCompany || '',
+        transactionId || '',
+        paymentDone ? 'Yes' : 'No',
+        paymentAmount || '',
+        ownerEmail || '',
         resumeLink || '',
         resumeFileName || ''
       ];
@@ -322,6 +296,7 @@ class GoogleSheetsService {
       // Don't throw error to prevent breaking the main application flow
     }
   }
+
 }
 
 module.exports = new GoogleSheetsService();

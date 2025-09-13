@@ -728,11 +728,140 @@ class EmailService {
   async testConnection() {
     try {
       await this.initializeTransporter();
-      return { success: true, message: 'SMTP connection successful' };
+      return { success: true, message: 'Email service is properly configured' };
     } catch (error) {
-      return { success: false, message: error.message };
+      return { 
+        success: false, 
+        message: 'Email service configuration error',
+        error: error.message 
+      };
     }
   }
+
+  async sendApplicationEmails(applicationData) {
+    const results = {
+      ownerNotification: null,
+      adminNotification: null,
+      applicantConfirmation: null,
+      errors: []
+    };
+
+    try {
+      await this.initializeTransporter();
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@hexsyndatalabs.com';
+      
+      // Get resume file if available
+      let resumeBuffer = null;
+      if (applicationData.resumeLink) {
+        try {
+          const response = await fetch(applicationData.resumeLink);
+          resumeBuffer = await response.buffer();
+        } catch (error) {
+          console.error('Error downloading resume for email attachment:', error);
+        }
+      }
+
+      // Send owner notification with resume
+      try {
+        const ownerTemplate = ownerNotificationTemplate(applicationData);
+        const ownerMailOptions = {
+          from: `${emailConfig.from.name} <${emailConfig.from.address}>`,
+          to: applicationData.ownerEmail,
+          subject: ownerTemplate.subject,
+          html: ownerTemplate.html,
+          text: ownerTemplate.text,
+          attachments: resumeBuffer ? [{
+            filename: applicationData.resumeFileName || 'resume.pdf',
+            content: resumeBuffer,
+            contentType: 'application/pdf'
+          }] : []
+        };
+
+        const ownerResult = await this.transporter.sendMail(ownerMailOptions);
+        results.ownerNotification = {
+          success: true,
+          messageId: ownerResult.messageId,
+          recipient: applicationData.ownerEmail
+        };
+      } catch (error) {
+        console.error('Error sending owner notification:', error);
+        results.errors.push({
+          type: 'owner_notification',
+          message: error.message
+        });
+      }
+
+      // Send admin notification with resume and sheets link
+      try {
+        const adminTemplate = ownerNotificationTemplate({
+          ...applicationData,
+          isAdmin: true,
+          sheetsLink: process.env.GOOGLE_SHEETS_LINK || 'Google Sheets link not configured'
+        });
+
+        const adminMailOptions = {
+          from: `${emailConfig.from.name} <${emailConfig.from.address}>`,
+          to: adminEmail,
+          subject: `[ADMIN] ${adminTemplate.subject}`,
+          html: adminTemplate.html,
+          text: adminTemplate.text,
+          attachments: resumeBuffer ? [{
+            filename: applicationData.resumeFileName || 'resume.pdf',
+            content: resumeBuffer,
+            contentType: 'application/pdf'
+          }] : []
+        };
+
+        const adminResult = await this.transporter.sendMail(adminMailOptions);
+        results.adminNotification = {
+          success: true,
+          messageId: adminResult.messageId,
+          recipient: adminEmail
+        };
+      } catch (error) {
+        console.error('Error sending admin notification:', error);
+        results.errors.push({
+          type: 'admin_notification',
+          message: error.message
+        });
+      }
+
+      // Send applicant confirmation (no attachments)
+      try {
+        const applicantTemplate = applicantConfirmationTemplate(applicationData);
+        const applicantMailOptions = {
+          from: `${emailConfig.from.name} <${emailConfig.from.address}>`,
+          to: applicationData.email,
+          subject: applicantTemplate.subject,
+          html: applicantTemplate.html,
+          text: applicantTemplate.text
+        };
+
+        const applicantResult = await this.transporter.sendMail(applicantMailOptions);
+        results.applicantConfirmation = {
+          success: true,
+          messageId: applicantResult.messageId,
+          recipient: applicationData.email
+        };
+      } catch (error) {
+        console.error('Error sending applicant confirmation:', error);
+        results.errors.push({
+          type: 'applicant_confirmation',
+          message: error.message
+        });
+      }
+
+    } catch (error) {
+      console.error('Error in sendApplicationEmails:', error);
+      results.errors.push({
+        type: 'application_processing',
+        message: error.message
+      });
+    }
+
+    return results;
+  }
+
 }
 
 module.exports = new EmailService();
