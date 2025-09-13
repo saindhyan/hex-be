@@ -147,42 +147,73 @@ const careerApplicationSchema = Joi.object({
 }).options({ stripUnknown: true });
 
 const validateApplication = (req, res, next) => {
-  // Check if resume file is present
-  if (!req.file) {
-    return res.status(400).json({
-      error: 'Validation failed',
-      details: [{
-        field: 'resume',
-        message: 'Resume file is required'
-      }]
+  try {
+    console.log('Validation - Request body:', JSON.stringify(req.body, null, 2));
+    console.log('Validation - Request file:', req.file ? 'File exists' : 'No file');
+    
+    // Check if resume file is present
+    if (!req.file || !req.file.buffer) {
+      console.error('No file found in request');
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: [{
+          field: 'resume',
+          message: 'Resume file is required and must be a valid PDF'
+        }]
+      });
+    }
+
+    // Parse JSON fields if they're strings (common with form-data)
+    let bodyData = { ...req.body };
+    const jsonFields = ['paymentAmount'];
+    
+    jsonFields.forEach(field => {
+      if (bodyData[field] && typeof bodyData[field] === 'string') {
+        try {
+          bodyData[field] = JSON.parse(bodyData[field]);
+        } catch (e) {
+          // If parsing fails, keep the original value
+          console.warn(`Failed to parse ${field} as JSON`);
+        }
+      }
+    });
+
+    // Validate other fields
+    const { error, value } = applicationSchema.validate(bodyData, {
+      abortEarly: false,
+      stripUnknown: true,
+      convert: true
+    });
+
+    if (error) {
+      const validationErrors = error.details.map(detail => ({
+        field: detail.path.join('.'),
+        message: detail.message.replace(/\"/g, "'")
+      }));
+
+      console.error('Validation errors:', validationErrors);
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: validationErrors
+      });
+    }
+
+    // Add file info to validated data
+    req.validatedData = {
+      ...value,
+      resumeFile: req.file
+    };
+    
+    console.log('Validation successful, proceeding to route handler');
+    next();
+  } catch (error) {
+    console.error('Error in validation middleware:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Failed to process validation',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
-
-  // Validate other fields
-  const { error, value } = applicationSchema.validate(req.body, {
-    abortEarly: false,
-    stripUnknown: true
-  });
-
-  if (error) {
-    const validationErrors = error.details.map(detail => ({
-      field: detail.path.join('.'),
-      message: detail.message
-    }));
-
-    return res.status(400).json({
-      error: 'Validation failed',
-      details: validationErrors
-    });
-  }
-
-  // Add file info to validated data
-  req.validatedData = {
-    ...value,
-    resumeFile: req.file
-  };
-  
-  next();
 };
 
 const validateContact = (req, res, next) => {

@@ -10,21 +10,22 @@ const { validateApplication } = require('../middleware/validation');
 
 const router = express.Router();
 
-// Configure multer for file uploads
-// Use memory storage for Vercel compatibility
-const storage = multer.memoryStorage();
-
+// Configure multer for file uploads (matching career.js implementation)
 const upload = multer({
-  storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
   fileFilter: (req, file, cb) => {
+    console.log('Processing file:', file);
     if (file.mimetype === 'application/pdf') {
       cb(null, true);
     } else {
-      cb(new Error('Only PDF files are allowed'), false);
+      console.error('Invalid file type:', file.mimetype);
+      cb(new Error('Only PDF files are allowed for resume upload'), false);
     }
   }
-});
+}).single('resume');
 
 // Rate limiting for application endpoint
 const applicationRateLimit = rateLimit({
@@ -36,11 +37,20 @@ const applicationRateLimit = rateLimit({
   }
 });
 
+// Debug middleware to log request details
+const debugRequest = (req, res, next) => {
+  console.log('Request Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('Request Body:', JSON.stringify(req.body, null, 2));
+  console.log('Request Files:', req.files || 'No files');
+  console.log('Request File:', req.file || 'No file');
+  next();
+};
+
 // Submit application endpoint with file upload
 router.post('/', 
-  applicationRateLimit, 
+  applicationRateLimit,
   upload.single('resume'),
-  validateApplication, 
+  validateApplication,
   async (req, res) => {
     try {
       const applicationData = req.validatedData;
@@ -138,5 +148,35 @@ router.post('/',
     }
   }
 );
+
+// Error handler for multer
+router.use((error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    // A Multer error occurred when uploading
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: [{
+          field: 'resume',
+          message: 'File size too large. Maximum size is 10MB.'
+        }]
+      });
+    }
+    return res.status(400).json({
+      error: 'File upload failed',
+      message: error.message
+    });
+  } else if (error) {
+    // Handle other types of errors
+    return res.status(400).json({
+      error: 'Validation failed',
+      details: [{
+        field: 'resume',
+        message: error.message
+      }]
+    });
+  }
+  next();
+});
 
 module.exports = router;
