@@ -147,6 +147,18 @@ const careerApplicationSchema = Joi.object({
 }).options({ stripUnknown: true });
 
 const validateApplication = (req, res, next) => {
+  // Check if resume file is present
+  if (!req.file) {
+    return res.status(400).json({
+      error: 'Validation failed',
+      details: [{
+        field: 'resume',
+        message: 'Resume file is required'
+      }]
+    });
+  }
+
+  // Validate other fields
   const { error, value } = applicationSchema.validate(req.body, {
     abortEarly: false,
     stripUnknown: true
@@ -164,7 +176,12 @@ const validateApplication = (req, res, next) => {
     });
   }
 
-  req.validatedData = value;
+  // Add file info to validated data
+  req.validatedData = {
+    ...value,
+    resumeFile: req.file
+  };
+  
   next();
 };
 
