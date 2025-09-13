@@ -106,6 +106,24 @@ const ownerNotificationTemplate = (applicationData) => {
                 background-color: #6c757d;
                 color: white;
             }
+            .btn-resume {
+                display: inline-block;
+                padding: 12px 24px;
+                margin: 15px 0;
+                background-color: #4CAF50;
+                color: white;
+                text-decoration: none;
+                border-radius: 4px;
+                font-weight: 500;
+                text-align: center;
+                border: none;
+                cursor: pointer;
+                transition: background-color 0.3s ease;
+            }
+            .btn-resume:hover {
+                background-color: #45a049;
+                text-decoration: none;
+            }
             .footer {
                 text-align: center;
                 margin-top: 30px;
@@ -196,6 +214,14 @@ const ownerNotificationTemplate = (applicationData) => {
                 <div class="info-item">
                     <div class="info-label">Portfolio</div>
                     <div class="info-value"><a href="${applicant.portfolio}" style="color: #667eea;">${applicant.portfolio}</a></div>
+                </div>
+                ` : ''}
+                
+                ${applicationData.resumeLink ? `
+                <div class="info-item" style="grid-column: 1 / -1; margin-top: 10px;">
+                    <a href="${applicationData.resumeLink}" class="btn-resume" target="_blank" style="color: white; text-decoration: none;">
+                        📄 View Resume
+                    </a>
                 </div>
                 ` : ''}
             </div>
