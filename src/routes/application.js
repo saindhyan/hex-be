@@ -11,19 +11,8 @@ const { validateApplication } = require('../middleware/validation');
 const router = express.Router();
 
 // Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, '../../uploads/resumes');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Use memory storage for Vercel compatibility
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
@@ -68,8 +57,11 @@ router.post('/',
           const applicantName = `${applicationData.firstName}_${applicationData.lastName}`;
           const jobTitle = applicationData.opportunityTitle || 'Application';
           
+          // Get the file buffer directly from memory storage
+          const fileBuffer = resumeFile.buffer;
+          
           const uploadResult = await googleDriveService.uploadResume(
-            fs.readFileSync(resumeFile.path),
+            fileBuffer,
             resumeFile.originalname,
             applicantName,
             jobTitle
@@ -77,9 +69,6 @@ router.post('/',
           
           resumeLink = uploadResult.viewLink;
           resumeFileName = uploadResult.fileName;
-          
-          // Clean up the uploaded file after successful upload to Drive
-          fs.unlinkSync(resumeFile.path);
         } catch (error) {
           console.error('Error uploading resume to Google Drive:', error);
           // Don't fail the entire request if resume upload fails
@@ -138,10 +127,7 @@ router.post('/',
     } catch (error) {
       console.error('Application processing failed:', error);
       
-      // Clean up uploaded file if there was an error
-      if (req.file && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
+      // No need to clean up files when using memory storage
       
       res.status(500).json({
         error: 'Internal server error',
