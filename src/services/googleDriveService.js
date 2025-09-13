@@ -56,9 +56,16 @@ class GoogleDriveService {
         parents: this.folderId ? [this.folderId] : undefined
       };
 
+      const { Readable } = require('stream');
+      
+      // Convert Buffer to stream for Google Drive API
+      const stream = new Readable();
+      stream.push(fileBuffer);
+      stream.push(null);
+
       const media = {
         mimeType: 'application/pdf',
-        body: fileBuffer
+        body: stream
       };
       
 

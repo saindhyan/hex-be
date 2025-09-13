@@ -24,13 +24,13 @@ const upload = multer({
   }
 });
 
-// Rate limiting for career application endpoint
+// Rate limiting for career application endpoint (increased for development)
 const careerRateLimit = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 3, // limit each IP to 3 career application requests per windowMs
+  windowMs: 60 * 1000, // 1 minute
+  max: 100, // limit each IP to 100 requests per minute during development
   message: {
     error: 'Too many career application requests from this IP, please try again later.',
-    retryAfter: '15 minutes'
+    retryAfter: '1 minute'
   }
 });
 
