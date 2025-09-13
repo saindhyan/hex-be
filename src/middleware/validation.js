@@ -81,7 +81,7 @@ const applicationSchema = Joi.object({
   // Payment details
   transactionId: Joi.string().trim().allow('').optional(),
   paymentDone: Joi.boolean().default(false),
-  paymentAmount: Joi.string().trim().allow('').optional(),
+  // paymentAmount: Joi.string().trim().allow('').optional(),
   
   // Owner email
   ownerEmail: Joi.string().email().required()
@@ -92,10 +92,10 @@ const applicationSchema = Joi.object({
     }),
   
   // Resume file (handled by multer)
-  resume: Joi.object().required()
-    .messages({
-      'any.required': 'Resume file is required'
-    })
+  // resume: Joi.object().required()
+  //   .messages({
+  //     'any.required': 'Resume file is required'
+  //   })
     
 }).options({ 
   stripUnknown: true,
